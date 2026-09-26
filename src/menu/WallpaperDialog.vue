@@ -9,7 +9,11 @@ const menu = useMenuStore();
 const settings = useSettingsStore();
 
 const wallpaperOptions: { value: WallpaperKind; label: string; hint: string }[] = [
-    { value: 'nexus', label: 'Nexus', hint: 'Fondo animado' },
+    { value: 'nexus', label: 'Nexus', hint: 'Pulsos de luz sobre una cuadrícula; tócalo para lanzar más' },
+    { value: 'grass', label: 'Hierba', hint: 'Hierba mecida por el viento; el cielo sigue la hora del día' },
+    { value: 'galaxy', label: 'Galaxia', hint: 'Una galaxia espiral que gira despacio' },
+    { value: 'magicSmoke', label: 'Humo mágico', hint: 'Humo de colores; tócalo para removerlo' },
+    { value: 'polarClock', label: 'Reloj polar', hint: 'La hora, el día y el mes en anillos de colores' },
     { value: 'system', label: 'Fondo del sistema', hint: 'La imagen elegida en Android' },
 ];
 
@@ -45,28 +49,30 @@ const fpsOptions: NexusFps[] = [30, 60, 120];
             :hint="opt.hint"
             @update:model-value="settings.wallpaper = opt.value" />
 
-        <section v-if="settings.wallpaper === 'nexus'" class="options">
-            <div class="field-label">Cantidad de pulsos</div>
-            <div class="segmented">
-                <button
-                    v-for="opt in densityOptions"
-                    :key="opt.value"
-                    :class="{ selected: settings.nexusDensity === opt.value }"
-                    @click="settings.nexusDensity = opt.value">
-                    {{ opt.label }}
-                </button>
-            </div>
+        <section v-if="settings.wallpaper !== 'system'" class="options">
+            <template v-if="settings.wallpaper === 'nexus'">
+                <div class="field-label">Cantidad de pulsos</div>
+                <div class="segmented">
+                    <button
+                        v-for="opt in densityOptions"
+                        :key="opt.value"
+                        :class="{ selected: settings.nexusDensity === opt.value }"
+                        @click="settings.nexusDensity = opt.value">
+                        {{ opt.label }}
+                    </button>
+                </div>
 
-            <div class="field-label">Velocidad</div>
-            <div class="segmented">
-                <button
-                    v-for="opt in speedOptions"
-                    :key="opt.value"
-                    :class="{ selected: settings.nexusSpeed === opt.value }"
-                    @click="settings.nexusSpeed = opt.value">
-                    {{ opt.label }}
-                </button>
-            </div>
+                <div class="field-label">Velocidad</div>
+                <div class="segmented">
+                    <button
+                        v-for="opt in speedOptions"
+                        :key="opt.value"
+                        :class="{ selected: settings.nexusSpeed === opt.value }"
+                        @click="settings.nexusSpeed = opt.value">
+                        {{ opt.label }}
+                    </button>
+                </div>
+            </template>
 
             <div class="field-label">Fluidez (fotogramas por segundo)</div>
             <div class="segmented">

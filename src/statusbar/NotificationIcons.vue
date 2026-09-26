@@ -2,11 +2,11 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import { useNow } from '@vueuse/core';
 
-// Bridge can't read notifications, so these are decorative Gingerbread notification icons,
-// with a bit of life: today's date on the calendar, USB icons while charging, and an occasional download.
+// Without notification access (or on stock Bridge), these are decorative Gingerbread notification icons,
+// with a bit of life: today's date on the calendar, USB icons while plugged into USB, and an occasional download.
 
 const props = defineProps<{
-    charging: boolean;
+    usb: boolean;
 }>();
 
 // an occasional "Market download": every 1-3 minutes, for 10-20 seconds
@@ -57,7 +57,7 @@ onBeforeUnmount(() => clearTimeout(downloadTimer));
         </svg>
 
         <!-- USB connected: the trident -->
-        <svg v-if="props.charging" class="icon" viewBox="0 0 16 18" aria-hidden="true">
+        <svg v-if="props.usb" class="icon" viewBox="0 0 16 18" aria-hidden="true">
             <path d="M8 1v16M8 12L3.5 8.5V6M8 9.5l4.5-2.5V5" class="stroke" />
             <path d="M6 3.5L8 0.5l2 3z" class="solid" />
             <circle cx="3.5" cy="5" r="1.5" class="solid" />
@@ -66,7 +66,7 @@ onBeforeUnmount(() => clearTimeout(downloadTimer));
         </svg>
 
         <!-- USB debugging: the Android robot -->
-        <svg v-if="props.charging" class="icon" viewBox="0 0 16 18" aria-hidden="true">
+        <svg v-if="props.usb" class="icon" viewBox="0 0 16 18" aria-hidden="true">
             <path d="M3 8a5 5 0 0 1 10 0z" class="solid" />
             <path d="M5 3.5L4 2M11 3.5l1-1.5" class="stroke" />
             <rect x="3" y="9" width="10" height="6" rx="1" class="solid" />

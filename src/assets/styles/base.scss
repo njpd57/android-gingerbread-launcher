@@ -11,6 +11,12 @@
     src: url("@/assets/fonts/DroidSans-Bold.ttf") format("truetype");
 }
 
+// Clockopia, the Android 2.x lock screen clock font (Apache 2.0, from AOSP android-2.3.7_r1; see assets/fonts/NOTICE)
+@font-face {
+    font-family: "Clockopia";
+    src: url("@/assets/fonts/Clockopia.ttf") format("truetype");
+}
+
 .launcher-root {
     color-scheme: dark;
     color: #fff;

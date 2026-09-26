@@ -98,6 +98,20 @@ describe('useHomeLayoutStore', () =>
         expect(chrome).toMatchObject({ page: DEFAULT_PAGE, x: 0, y: 3 });
     });
 
+    it('places new apps on the first page with room, starting from the given one', () =>
+    {
+        const layout = useHomeLayoutStore();
+        // default page (4 rows in tests): clock rows 0-1, weather row 2, so the first free cell is (0, 3)
+        expect(layout.addAppAnywhere('com.android.chrome', 'Chrome', DEFAULT_PAGE)).toEqual({ page: DEFAULT_PAGE, x: 0, y: 3 });
+        expect(layout.hasShortcut('com.android.chrome')).toBe(true);
+        expect(layout.hasShortcut('com.google.android.gm')).toBe(false);
+
+        // fill the rest of the default page, then the next app goes to page 0
+        for (let x = 1; x < 4; x++)
+            layout.addApp(`app.${x}`, `App ${x}`, DEFAULT_PAGE, x, 3);
+        expect(layout.addAppAnywhere('com.google.android.gm', 'Gmail', DEFAULT_PAGE)).toEqual({ page: 0, x: 0, y: 0 });
+    });
+
     it('creates, fills, renames and empties folders', () =>
     {
         const layout = useHomeLayoutStore();

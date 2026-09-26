@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useAppsStore } from '@/stores/useAppsStore';
+import { useAppLauncherStore } from '@/stores/useAppLauncherStore';
 import { PAGE_COUNT, useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import { useDrawerStore } from '@/stores/useDrawerStore';
 import { useDragStore } from '@/stores/useDragStore';
@@ -8,8 +9,10 @@ import PhoneIcon from './icons/PhoneIcon.vue';
 import AllAppsIcon from './icons/AllAppsIcon.vue';
 import BrowserIcon from './icons/BrowserIcon.vue';
 import TrashIcon from './icons/TrashIcon.vue';
+import { bridgeHas } from '@/utils/bridge-utils';
+import type { BridgeDefaultAppRole } from '@/types/bridge-fork';
 
-// Bridge can't tell us the default dialer/browser, so launch the first installed candidate
+// fallback for Bridge builds that can't tell us the default dialer/browser: the first installed candidate
 const PHONE_PACKAGES = [
     'com.google.android.dialer',
     'com.android.dialer',
@@ -29,6 +32,7 @@ const BROWSER_PACKAGES = [
 ];
 
 const apps = useAppsStore();
+const launcher = useAppLauncherStore();
 const workspace = useWorkspaceStore();
 const drawer = useDrawerStore();
 const drag = useDragStore();
@@ -40,14 +44,19 @@ onBeforeUnmount(() => drag.trashEl = null);
 
 const isOverTrash = computed(() => drag.target?.kind === 'trash');
 
+// apps dragged out of the drawer get uninstalled; everything else is just removed from the home screen
+const trashLabel = computed(() => drag.active?.payload.source === 'drawer' ? 'Desinstalar' : 'Quitar');
+
 const dotsLeft = computed(() => workspace.currentPage);
 const dotsRight = computed(() => PAGE_COUNT - 1 - workspace.currentPage);
 
-function launchFirstInstalled(candidates: string[], notFoundMessage: string)
+// the user's default app when Bridge can tell us, otherwise the first installed candidate
+function launchDefaultApp(role: BridgeDefaultAppRole, candidates: string[], notFoundMessage: string)
 {
-    const packageName = candidates.find(p => apps.apps.has(p));
+    const defaultPackage = bridgeHas('getDefaultAppPackageName') ? Bridge.getDefaultAppPackageName(role) : null;
+    const packageName = defaultPackage ?? candidates.find(p => apps.apps.has(p));
     if (packageName)
-        Bridge.requestLaunchApp(packageName, true);
+        launcher.launch(packageName);
     else
         Bridge.showToast(notFoundMessage);
 }
@@ -70,13 +79,14 @@ function launchFirstInstalled(candidates: string[], notFoundMessage: string)
             class="hotseat trash"
             :class="{ hover: isOverTrash }">
             <TrashIcon />
+            <span class="trash-label">{{ trashLabel }}</span>
         </div>
 
         <div v-else class="hotseat">
             <button
                 class="hotseat-button"
                 aria-label="Teléfono"
-                @click="launchFirstInstalled(PHONE_PACKAGES, 'No se encontró una app de teléfono')">
+                @click="launchDefaultApp('dialer', PHONE_PACKAGES, 'No se encontró una app de teléfono')">
                 <PhoneIcon />
             </button>
             <button
@@ -88,7 +98,7 @@ function launchFirstInstalled(candidates: string[], notFoundMessage: string)
             <button
                 class="hotseat-button"
                 aria-label="Navegador"
-                @click="launchFirstInstalled(BROWSER_PACKAGES, 'No se encontró un navegador')">
+                @click="launchDefaultApp('browser', BROWSER_PACKAGES, 'No se encontró un navegador')">
                 <BrowserIcon />
             </button>
         </div>
@@ -175,12 +185,20 @@ button {
             0 -2px 10px rgba(#000, 0.45);
 
         &.trash {
+            justify-content: center;
+            gap: 6px;
             transition: background 0.1s;
 
             > svg {
-                width: 40px;
-                height: 40px;
+                width: 36px;
+                height: 36px;
                 color: #e8e8e8;
+            }
+
+            > .trash-label {
+                color: #e8e8e8;
+                font-size: 15px;
+                text-shadow: 0 1px 2px #000;
             }
 
             // Gingerbread's delete zone turns red when an item is over it

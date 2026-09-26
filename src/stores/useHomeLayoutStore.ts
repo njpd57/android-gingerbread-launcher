@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, watch } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { DEFAULT_PAGE, PAGE_COUNT } from "./useWorkspaceStore";
@@ -20,12 +20,36 @@ export function autoGridRows(gridWidth: number, gridHeight: number)
     return Math.max(MIN_GRID_ROWS, Math.min(MAX_GRID_ROWS, rows));
 }
 
-export type WidgetKind = 'clock' | 'clockLarge' | 'weather';
+export type WidgetKind = 'clock' | 'clockLarge' | 'digitalClock' | 'weather' | 'power' | 'search' | 'battery' | 'calendar' | 'quote' | 'photo' | 'music' | 'musicSongbird' | 'agenda' | 'screenTime' | 'mostUsed'
+    | 'countdown' | 'forecast' | 'sunMoon' | 'note' | 'timer' | 'calculator' | 'tasks' | 'rss' | 'favContacts' | 'directCall' | 'directMessage';
 
 export const WIDGET_SIZES: Record<WidgetKind, { w: number; h: number }> = {
     clock: { w: 2, h: 2 },
     clockLarge: { w: 4, h: 2 },
     weather: { w: 4, h: 1 },
+    power: { w: 4, h: 1 },
+    search: { w: 4, h: 1 },
+    digitalClock: { w: 4, h: 1 },
+    battery: { w: 1, h: 1 },
+    calendar: { w: 4, h: 2 },
+    quote: { w: 4, h: 1 },
+    photo: { w: 2, h: 2 },
+    music: { w: 4, h: 1 },
+    musicSongbird: { w: 4, h: 1 },
+    mostUsed: { w: 4, h: 1 },
+    agenda: { w: 4, h: 2 },
+    countdown: { w: 2, h: 1 },
+    forecast: { w: 4, h: 2 },
+    sunMoon: { w: 2, h: 1 },
+    note: { w: 2, h: 2 },
+    timer: { w: 2, h: 1 },
+    calculator: { w: 4, h: 3 },
+    tasks: { w: 2, h: 2 },
+    rss: { w: 4, h: 2 },
+    screenTime: { w: 4, h: 1 },
+    favContacts: { w: 4, h: 1 },
+    directCall: { w: 1, h: 1 },
+    directMessage: { w: 1, h: 1 },
 };
 
 export interface GridArea
@@ -99,8 +123,9 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
 
     // 0 = automatic, otherwise a fixed number of rows chosen by the user
     const rowsSetting = useLocalStorage<number>('home.gridRows', 0);
-    // measured from the screen by App.vue
-    const autoRows = ref(MIN_GRID_ROWS);
+    // measured from the screen by App.vue (in portrait only); remembered so that starting up
+    // in landscape keeps the portrait layout instead of falling back to the minimum
+    const autoRows = useLocalStorage<number>('home.autoRows', MIN_GRID_ROWS);
     const rows = computed(() => rowsSetting.value || autoRows.value);
 
     function isAreaFree(area: GridArea, ignoreId?: string)
@@ -139,6 +164,32 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
             ...items.value,
             { id: newId(), type: 'app', packageName, label, page, x, y, w: 1, h: 1 },
         ];
+    }
+
+    /** Pages in the order to look for room: the given one first, then the rest from left to right. */
+    function pagesFrom(first: number)
+    {
+        return [first, ...Array.from({ length: PAGE_COUNT }, (_, p) => p).filter(p => p !== first)];
+    }
+
+    /** Adds an app shortcut in the first free cell, starting on `firstPage`. Returns where it went, or null if every page is full. */
+    function addAppAnywhere(packageName: string, label: string, firstPage: number)
+    {
+        for (const page of pagesFrom(firstPage))
+        {
+            const spot = findFreeSpot(page, 1, 1);
+            if (spot)
+            {
+                addApp(packageName, label, spot.page, spot.x, spot.y);
+                return spot;
+            }
+        }
+        return null;
+    }
+
+    function hasShortcut(packageName: string)
+    {
+        return items.value.some(i => i.type === 'app' && i.packageName === packageName);
     }
 
     function addWidget(widget: WidgetKind, page: number, x: number, y: number)
@@ -206,8 +257,7 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
     {
         for (const item of items.value.filter(i => !isInGrid(i)))
         {
-            const pages = [item.page, ...Array.from({ length: PAGE_COUNT }, (_, p) => p).filter(p => p !== item.page)];
-            for (const page of pages)
+            for (const page of pagesFrom(item.page))
             {
                 const spot = findFreeSpot(page, item.w, item.h);
                 if (spot)
@@ -245,6 +295,8 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
         findFreeSpot,
         folderAt,
         addApp,
+        addAppAnywhere,
+        hasShortcut,
         addWidget,
         addFolder,
         renameFolder,

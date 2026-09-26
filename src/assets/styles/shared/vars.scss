@@ -6,3 +6,91 @@ $dur-long: 0.5s;
 $ease-mat-accel-decel: cubic-bezier(0.4, 0.0, 0.2, 1);
 $ease-mat-accel: cubic-bezier(0.4, 0.0, 1, 1);
 $ease-mat-decel: cubic-bezier(0.0, 0.0, 0.2, 1);
+
+// Gingerbread widget look, taken from the Songbird player and the power control widget. Use these for
+// every widget's chrome, so they all read as one family.
+
+// the outer frame: gray-to-black gradient, thin light border, drop shadow
+@mixin gb-widget-frame
+{
+    border: 1px solid rgba(#fff, 0.25);
+    border-radius: 7px;
+    background: linear-gradient(to bottom, rgba(#3c3c3c, 0.85), rgba(#1a1a1a, 0.9));
+    box-shadow: 0 3px 8px rgba(#000, 0.5);
+    color: #fff;
+}
+
+// a glossy panel, like the power control: highlight on the top half over the frame gradient
+@mixin gb-widget-glossy
+{
+    border: 1px solid rgba(#fff, 0.16);
+    border-radius: 6px;
+    background:
+        linear-gradient(to bottom, rgba(#fff, 0.1), rgba(#fff, 0.03) 50%, transparent 50%),
+        linear-gradient(to bottom, rgba(#3a3a3a, 0.8), rgba(#101010, 0.9));
+    box-shadow: 0 3px 8px rgba(#000, 0.5);
+    color: #fff;
+}
+
+// a title or info bar, like Songbird's "Artist - Title"
+@mixin gb-widget-bar
+{
+    border-bottom: 1px solid #0a0a0a;
+    background: linear-gradient(to bottom, #4a4a4a, #2c2c2c);
+    color: #fff;
+    text-shadow: 0 1px 1px #000;
+}
+
+// a recessed area inside the frame, for lists and displays
+@mixin gb-widget-inset
+{
+    overflow: hidden;
+    border: 1px solid #111;
+    border-radius: 4px;
+    background: linear-gradient(to bottom, #1c1c1c, #262626);
+    box-shadow: inset 0 1px 3px rgba(#000, 0.7);
+}
+
+// the orange pressed state
+@mixin gb-pressed
+{
+    background: linear-gradient(to bottom, #ffc64d, #ff8a00);
+    color: #111;
+    text-shadow: none;
+}
+
+// a big glossy gray button, like Songbird's; put them side by side with 1px #111 dividers
+@mixin gb-widget-button
+{
+    appearance: none;
+    border: none;
+    background:
+        linear-gradient(to bottom, rgba(#fff, 0.14), rgba(#fff, 0.04) 50%, transparent 50%),
+        linear-gradient(to bottom, #6a6a6a, #383838);
+    box-shadow: inset 0 1px 0 rgba(#fff, 0.15);
+    color: #e8e8e8;
+    font: inherit;
+    text-shadow: 0 1px 1px #000;
+    cursor: pointer;
+
+    &:disabled {
+        color: #8a8a8a;
+    }
+
+    &:active:not(:disabled) {
+        @include gb-pressed;
+    }
+}
+
+// a contact photo like Gingerbread's QuickContactBadge: square, in a thin light frame, never a circle.
+// Put the photo <img> or the default silhouette (ContactGlyph, colored by `color`) inside.
+@mixin gb-contact-photo
+{
+    box-sizing: border-box;
+    border: 2px solid #e6e6e6;
+    border-radius: 2px;
+    background: linear-gradient(to bottom, #d8d8d8, #a8a8a8);
+    box-shadow: 0 1px 3px rgba(#000, 0.7);
+    color: #7a7a7a;
+    object-fit: cover;
+}

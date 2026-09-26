@@ -1,21 +1,52 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useNow } from '@vueuse/core';
-import type { StatusBarBackground } from '@/stores/useSettingsStore';
+import { useSettingsStore, type StatusBarBackground } from '@/stores/useSettingsStore';
 import { useDeviceStatus } from './useDeviceStatus';
 import { useSimulatedSignal } from './useSimulatedSignal';
 import NotificationIcons from './NotificationIcons.vue';
+import LiveNotificationIcons from './LiveNotificationIcons.vue';
+import { useNotificationsStore } from '@/stores/useNotificationsStore';
+import { useMenuStore } from '@/stores/useMenuStore';
+import { useConnectivityStore } from '@/stores/useConnectivityStore';
+import { useBatteryStore } from '@/stores/useBatteryStore';
+import { useQuickSettingsStore } from '@/stores/useQuickSettingsStore';
+import { useAlarmStore } from '@/stores/useAlarmStore';
+import { dataActivityArrows, wifiArcs } from '@/utils/connectivity';
 
 const props = defineProps<{
     background: StatusBarBackground;
+    // side padding in CSS px, to keep clear of rounded screen corners
+    sideMargin: number;
 }>();
 
 const now = useNow({ interval: 1000 });
+// which icons to show (Appearance); the clock always shows
+const settings = useSettingsStore();
+const show = computed(() => settings.statusBarIcons);
 const device = useDeviceStatus();
+const notifications = useNotificationsStore();
+const menu = useMenuStore();
 
-// Wi-Fi has 3 arcs, the cell signal 4 bars; neither strength is readable, so both drift believably
+// with our Bridge fork, our own panel (it also holds the quick settings); otherwise Android's shade
+function openNotifications()
+{
+    if (notifications.isSupported)
+        menu.isNotificationPanelOpen ? menu.closeAll() : menu.showNotificationPanel();
+    else
+        Bridge.requestExpandNotificationShade(true);
+}
+
+// Wi-Fi has 3 arcs, the cell signal 4 bars. Our Bridge fork reports the real levels; on stock Bridge
+// neither is readable, so both drift believably
+const conn = useConnectivityStore();
+const real = computed(() => conn.connectivity);
 const wifi = useSimulatedSignal(3, device.online, device.effectiveType);
 const cell = useSimulatedSignal(4, device.online, device.effectiveType);
+
+const wifiLevel = computed(() => real.value ? wifiArcs(real.value.wifiLevel) : wifi.level.value);
+const cellLevel = computed(() => real.value ? (real.value.cellularLevel ?? 0) : cell.level.value);
+const isOffline = computed(() => real.value ? real.value.type === 'none' : !device.online.value);
 
 // Gingerbread's status bar clock: 12-hour, with a smaller AM/PM ("11:02 AM")
 const clock = computed(() =>
@@ -32,52 +63,104 @@ const clock = computed(() =>
 const isLight = computed(() => props.background === 'gray' || props.background === 'white');
 
 // on mobile data there's no Wi-Fi icon, and the signal gets a "3G" tag and the activity arrows
-const onWifi = computed(() => device.connectionType.value !== 'cellular');
-const activity = computed(() => onWifi.value ? wifi : cell);
+const onWifi = computed(() => real.value ? real.value.type !== 'cellular' : device.connectionType.value !== 'cellular');
 
-// without the Battery Status API, show a full battery
-const batteryLevel = computed(() => device.batteryLevel.value ?? 1);
+// the fork measures the device's real traffic (on any network); stock Bridge gets simulated arrows
+const activity = computed(() =>
+{
+    if (real.value)
+        return dataActivityArrows(real.value.dataActivity);
+    const simulated = onWifi.value ? wifi : cell;
+    return { in: simulated.activityIn.value, out: simulated.activityOut.value };
+});
+
+// our Bridge fork reports the real battery; stock Bridge the web API, and a full battery without it
+const battery = useBatteryStore();
+const batteryLevel = computed(() => battery.level ?? 1);
 const batteryFillHeight = computed(() => Math.max(1, Math.round(batteryLevel.value * 14)));
-const isBatteryLow = computed(() => device.batteryLevel.value !== null && batteryLevel.value <= 0.15 && !device.charging.value);
+const isBatteryLow = computed(() => battery.level !== null && batteryLevel.value <= 0.15 && !battery.charging);
+// Gingerbread's state icons left of the signal, from our Bridge fork: Bluetooth on, an alarm set, GPS
+// on, and the ringer in vibrate or silent
+const qs = useQuickSettingsStore();
+// and an alarm clock while an alarm is set
+const alarm = useAlarmStore();
+
+// Gingerbread's USB icon: only for a USB cable when the fork says how it's plugged in, on any
+// charger otherwise
+const usbConnected = computed(() => battery.charging && (battery.pluggedType === null || battery.pluggedType === 'usb'));
 
 </script>
 
 <template>
     <div
         class="gb-status-bar"
-        :class="[background, { light: isLight, offline: !device.online.value }]"
+        :class="[background, { light: isLight, offline: isOffline }]"
+        :style="{ '--side-margin': `${sideMargin}px` }"
         role="button"
         aria-label="Abrir notificaciones"
-        @click="Bridge.requestExpandNotificationShade(true)">
+        @click="openNotifications">
 
-        <NotificationIcons class="notifications" :charging="device.charging.value" />
+        <!-- real icons when Bridge can read notifications, decorative ones otherwise -->
+        <LiveNotificationIcons v-if="show.notifications && notifications.canRead" class="notifications" />
+        <NotificationIcons v-else-if="show.notifications" class="notifications" :usb="usbConnected" />
 
         <div class="icons">
+            <!-- Bluetooth on: the rune -->
+            <svg v-if="show.bluetooth && qs.supportsRadioStates && qs.bluetoothOn" class="icon state" viewBox="0 0 12 18" aria-hidden="true">
+                <path d="M2.5 5.5l7 6.5-3.5 3.3V2.7L9.5 6l-7 6.5" class="line" />
+            </svg>
+
+            <!-- an alarm is set: the alarm clock -->
+            <svg v-if="show.alarm && alarm.nextAlarm" class="icon state" viewBox="0 0 18 18" aria-hidden="true">
+                <circle cx="9" cy="10" r="6" class="line" />
+                <path d="M9 6.8v3.5l2.2 1.4M2.5 4.5l2.8-2.3M15.5 4.5l-2.8-2.3" class="line" />
+            </svg>
+
+            <!-- GPS on: a crosshair -->
+            <svg v-if="show.gps && qs.supportsLocationState && qs.locationOn" class="icon state" viewBox="0 0 18 18" aria-hidden="true">
+                <circle cx="9" cy="9" r="5" class="line" />
+                <circle cx="9" cy="9" r="1.8" class="solid" />
+                <path d="M9 1v3M9 14v3M1 9h3M14 9h3" class="line" />
+            </svg>
+
+            <!-- vibrate: a phone between shake marks -->
+            <svg v-if="show.ringer && qs.supportsRingerMode && qs.ringerMode === 'vibrate'" class="icon state" viewBox="0 0 18 18" aria-hidden="true">
+                <rect x="5.5" y="2" width="7" height="14" rx="1" class="solid" />
+                <rect x="7" y="4" width="4" height="8" class="hole" />
+                <path d="M3 5.5v7M1 7.5v3M15 5.5v7M17 7.5v3" class="line" />
+            </svg>
+
+            <!-- silent: a speaker with a slash -->
+            <svg v-if="show.ringer && qs.supportsRingerMode && qs.ringerMode === 'silent'" class="icon state" viewBox="0 0 18 18" aria-hidden="true">
+                <path d="M2 7h3l4-3.5v11L5 11H2z" class="solid" />
+                <path d="M11 6l5 6M16 6l-5 6" class="line" />
+            </svg>
+
             <!-- data activity: down (in) and up (out) arrows, lit while "transferring" -->
-            <svg class="icon activity" viewBox="0 0 8 18" aria-hidden="true">
-                <path d="M4 17L0.8 12.5h6.4z" :class="{ on: activity.activityIn.value }" />
-                <path d="M4 1L7.2 5.5H0.8z" :class="{ on: activity.activityOut.value }" />
+            <svg v-if="show.dataActivity" class="icon activity" viewBox="0 0 8 18" aria-hidden="true">
+                <path d="M4 17L0.8 12.5h6.4z" :class="{ on: activity.in }" />
+                <path d="M4 1L7.2 5.5H0.8z" :class="{ on: activity.out }" />
             </svg>
 
             <!-- Wi-Fi: a wedge and two arcs, lit up to the current level (1..3) -->
-            <svg v-if="onWifi" class="icon wifi" viewBox="0 0 20 18" aria-hidden="true">
-                <path d="M10 16.5l2.4-2.9a3.8 3.8 0 0 0-4.8 0z" :class="{ on: wifi.level.value >= 1 }" />
-                <path d="M5.8 11.4a6.6 6.6 0 0 1 8.4 0l1.7-2.1a9.4 9.4 0 0 0-11.8 0z" :class="{ on: wifi.level.value >= 2 }" />
-                <path d="M2.3 7.2a12 12 0 0 1 15.4 0l1.7-2.1a14.8 14.8 0 0 0-18.8 0z" :class="{ on: wifi.level.value >= 3 }" />
+            <svg v-if="show.wifi && onWifi" class="icon wifi" viewBox="0 0 20 18" aria-hidden="true">
+                <path d="M10 16.5l2.4-2.9a3.8 3.8 0 0 0-4.8 0z" :class="{ on: wifiLevel >= 1 }" />
+                <path d="M5.8 11.4a6.6 6.6 0 0 1 8.4 0l1.7-2.1a9.4 9.4 0 0 0-11.8 0z" :class="{ on: wifiLevel >= 2 }" />
+                <path d="M2.3 7.2a12 12 0 0 1 15.4 0l1.7-2.1a14.8 14.8 0 0 0-18.8 0z" :class="{ on: wifiLevel >= 3 }" />
             </svg>
 
-            <span v-else class="network-tag">3G</span>
+            <span v-else-if="!onWifi && show.signal" class="network-tag">3G</span>
 
             <!-- signal: four rising bars, lit up to the current level -->
-            <svg class="icon signal" viewBox="0 0 18 18" aria-hidden="true">
-                <rect x="1" y="12" width="3" height="5" :class="{ on: cell.level.value >= 1 }" />
-                <rect x="5.5" y="9" width="3" height="8" :class="{ on: cell.level.value >= 2 }" />
-                <rect x="10" y="5.5" width="3" height="11.5" :class="{ on: cell.level.value >= 3 }" />
-                <rect x="14.5" y="1.5" width="3" height="15.5" :class="{ on: cell.level.value >= 4 }" />
+            <svg v-if="show.signal" class="icon signal" viewBox="0 0 18 18" aria-hidden="true">
+                <rect x="1" y="12" width="3" height="5" :class="{ on: cellLevel >= 1 }" />
+                <rect x="5.5" y="9" width="3" height="8" :class="{ on: cellLevel >= 2 }" />
+                <rect x="10" y="5.5" width="3" height="11.5" :class="{ on: cellLevel >= 3 }" />
+                <rect x="14.5" y="1.5" width="3" height="15.5" :class="{ on: cellLevel >= 4 }" />
             </svg>
 
             <!-- battery: level fills from the bottom, bolt while charging -->
-            <svg class="icon battery" :class="{ low: isBatteryLow }" viewBox="0 0 10 18" aria-hidden="true">
+            <svg v-if="show.battery" class="icon battery" :class="{ low: isBatteryLow }" viewBox="0 0 10 18" aria-hidden="true">
                 <rect x="3" y="0.5" width="4" height="2" class="cap" />
                 <rect x="0.75" y="2.25" width="8.5" height="15" rx="1" class="shell" />
                 <rect
@@ -86,7 +169,7 @@ const isBatteryLow = computed(() => device.batteryLevel.value !== null && batter
                     width="6"
                     :height="batteryFillHeight"
                     class="fill" />
-                <path v-if="device.charging.value" d="M5.8 5L2.8 10.4h2l-.6 3.6 3-5.4h-2z" class="bolt" />
+                <path v-if="battery.charging" d="M5.8 5L2.8 10.4h2l-.6 3.6 3-5.4h-2z" class="bolt" />
             </svg>
         </div>
 
@@ -109,8 +192,9 @@ $gb-dim-light: rgba(#000, 0.2);
         margin-right: auto;
     }
     gap: 5px;
-    // the center stays clear for the camera cutout
-    padding: 0 6px;
+    // the center stays clear for the camera cutout; the side padding (a setting) keeps
+    // the notification icons and the clock clear of rounded screen corners
+    padding: 0 max(var(--side-margin), env(safe-area-inset-right)) 0 max(var(--side-margin), env(safe-area-inset-left));
     color: #fff;
     cursor: pointer;
 
@@ -163,6 +247,28 @@ $gb-dim-light: rgba(#000, 0.2);
 
             &.wifi {
                 width: 18px;
+            }
+
+            // state icons are drawn in white, like 2.3's, not green
+            &.state {
+                width: auto;
+
+                > .solid,
+                > .solid.on {
+                    fill: #e8e8e8;
+                }
+
+                > .line {
+                    fill: none;
+                    stroke: #e8e8e8;
+                    stroke-width: 1.6;
+                    stroke-linecap: round;
+                    stroke-linejoin: round;
+                }
+
+                > .hole {
+                    fill: #000;
+                }
             }
 
             &.signal {
@@ -250,6 +356,20 @@ $gb-dim-light: rgba(#000, 0.2);
 
             &.activity > path.on {
                 fill: #111;
+            }
+
+            &.state {
+                > .solid {
+                    fill: #3a3a3a;
+                }
+
+                > .line {
+                    stroke: #3a3a3a;
+                }
+
+                > .hole {
+                    fill: #e8e8e8;
+                }
             }
 
             &.battery {

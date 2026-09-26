@@ -1,9 +1,11 @@
-import type { BridgeEventListener, WindowInsets } from "@bridgelauncher/api";
+import type { WindowInsets } from "@bridgelauncher/api";
+import type { AnyBridgeEventListener } from "./useBridgeEventStore";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { useTogglesStore } from "./useTogglesStore";
 import { useSettingsStore } from "./useSettingsStore";
+import { bridgeHas } from "@/utils/bridge-utils";
 
 // used when the status bar is shown but every inset Bridge reports is 0
 export const FALLBACK_STATUS_BAR_HEIGHT = 32;
@@ -33,6 +35,17 @@ export function toInsets(value: unknown): WindowInsets
     }
 }
 
+/**
+ * Undoes Bridge's top/left swap. Stock Bridge fills every inset (getters and events) positionally as
+ * (left, top, right, bottom) into a type declared (top, left, right, bottom), so the real top arrives as
+ * `left` and vice versa. Our fork fixed it and says so with `getWindowInsetsSwapFixed()`; builds without
+ * that method all have the bug.
+ */
+export function unswapInsets(i: WindowInsets, swapFixed: boolean): WindowInsets
+{
+    return swapFixed ? i : { left: i.top, top: i.left, right: i.right, bottom: i.bottom };
+}
+
 const SOURCES = {
     statusBars: () => Bridge.getStatusBarsWindowInsets(),
     statusBarsIgnoringVisibility: () => Bridge.getStatusBarsIgnoringVisibilityWindowInsets(),
@@ -40,6 +53,8 @@ const SOURCES = {
     navigationBarsIgnoringVisibility: () => Bridge.getNavigationBarsIgnoringVisibilityWindowInsets(),
     systemBars: () => Bridge.getSystemBarsWindowInsets(),
     displayCutout: () => Bridge.getDisplayCutoutWindowInsets(),
+    // the on-screen keyboard; guarded like other methods an older Bridge might lack
+    ime: () => bridgeHas('getImeWindowInsets') ? Bridge.getImeWindowInsets() : null,
 };
 
 type InsetsName = keyof typeof SOURCES;
@@ -51,7 +66,24 @@ const EVENTS: Record<string, InsetsName> = {
     navigationBarsIgnoringVisibilityWindowInsetsChanged: 'navigationBarsIgnoringVisibility',
     systemBarsWindowInsetsChanged: 'systemBars',
     displayCutoutWindowInsetsChanged: 'displayCutout',
+    imeWindowInsetsChanged: 'ime',
 };
+
+/**
+ * Which insets a Bridge event updates, and their new value; null for other events.
+ *
+ * The published API types say `{ name: 'imeWindowInsetsChanged', newValue }`, but Bridge builds the
+ * name from its Kotlin enum and sends `{ name: 'ImeWindowInsetsChanged', insets }` (seen on the device),
+ * so both spellings are accepted. Without this, the keyboard's inset never went back to 0.
+ */
+export function parseInsetsEvent(ev: { name: string } & Record<string, unknown>): { name: InsetsName; value: WindowInsets } | null
+{
+    const eventName = ev.name.charAt(0).toLowerCase() + ev.name.slice(1);
+    const name = EVENTS[eventName];
+    if (!name) return null;
+    const value = 'newValue' in ev ? ev.newValue : ev.insets;
+    return value === undefined ? null : { name, value: toInsets(value) };
+}
 
 export const useWindowInsetsStore = defineStore('windowInsets', () =>
 {
@@ -61,11 +93,13 @@ export const useWindowInsetsStore = defineStore('windowInsets', () =>
 
     const insets = reactive({} as Record<InsetsName, WindowInsets>);
 
+    const swapFixed = bridgeHas('getWindowInsetsSwapFixed') && Bridge.getWindowInsetsSwapFixed();
+
     function refresh()
     {
         for (const name of Object.keys(SOURCES) as InsetsName[])
         {
-            try { insets[name] = toInsets(SOURCES[name]()); }
+            try { insets[name] = unswapInsets(toInsets(SOURCES[name]()), swapFixed); }
             catch { insets[name] = ZERO; }
         }
     }
@@ -75,16 +109,16 @@ export const useWindowInsetsStore = defineStore('windowInsets', () =>
         setTimeout(refresh, delay);
     window.addEventListener('resize', refresh);
 
-    const onBridgeEvent: BridgeEventListener = ev =>
+    const onBridgeEvent: AnyBridgeEventListener = ev =>
     {
         if (ev.name === 'afterResume')
         {
             refresh();
             return;
         }
-        const name = EVENTS[ev.name];
-        if (name && 'newValue' in ev)
-            insets[name] = toInsets(ev.newValue);
+        const changed = parseInsetsEvent(ev as { name: string } & Record<string, unknown>);
+        if (changed)
+            insets[changed.name] = unswapInsets(changed.value, swapFixed);
     };
     bridgeEvents.addEventListener(onBridgeEvent);
 
@@ -132,8 +166,12 @@ export const useWindowInsetsStore = defineStore('windowInsets', () =>
         ? '0px'
         : `max(${navigationBarHeight.value}px, env(safe-area-inset-bottom, 0px))`);
 
+    /** How much of the bottom of the window the keyboard covers according to Bridge, in CSS px (0 when hidden). */
+    const imeBottom = computed(() => insets.ime.bottom);
+
     return {
         insets,
+        imeBottom,
         measuredStatusBarHeight,
         statusBarHeight,
         navigationBarHeight,

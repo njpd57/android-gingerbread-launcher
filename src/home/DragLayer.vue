@@ -3,8 +3,7 @@ import { computed } from 'vue';
 import { useDragStore } from '@/stores/useDragStore';
 import Shortcut from './Shortcut.vue';
 import FolderIcon from './icons/FolderIcon.vue';
-import AnalogClock from '@/widgets/clock/AnalogClock.vue';
-import WeatherWidget from '@/widgets/weather/WeatherWidget.vue';
+import WidgetView from '@/widgets/WidgetView.vue';
 
 const drag = useDragStore();
 
@@ -33,10 +32,7 @@ const ghostStyle = computed(() =>
             <Shortcut v-else-if="drag.active.ghost.type === 'folder'" :label="drag.active.ghost.name">
                 <FolderIcon />
             </Shortcut>
-            <div v-else-if="drag.active.ghost.widget !== 'weather'" class="clock-container">
-                <AnalogClock class="clock" />
-            </div>
-            <WeatherWidget v-else class="weather" />
+            <WidgetView v-else :kind="drag.active.ghost.widget" :widget-id="drag.active.ghost.id" />
         </div>
     </div>
 </template>
@@ -59,22 +55,6 @@ const ghostStyle = computed(() =>
         opacity: 0.85;
         transform-origin: center;
         filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
-
-        > .clock-container {
-            width: 100%;
-            height: 100%;
-            display: grid;
-            place-items: center;
-            container-type: size;
-
-            > .clock {
-                width: min(100cqw, 100cqh);
-            }
-        }
-
-        > .weather {
-            width: 100%;
-        }
     }
 }
 </style>

@@ -9,7 +9,8 @@
     "test:unit": "vitest",
     "build-only": "vite build",
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "grant-permissions": "bash scripts/grant-permissions.sh"
   },
   "dependencies": {
     "@bridgelauncher/api": "^0.1.0",

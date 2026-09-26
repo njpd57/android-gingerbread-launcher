@@ -2,10 +2,16 @@
 import { onMounted, ref, watch } from 'vue';
 import { useResizeObserver } from '@vueuse/core';
 import { PAGE_COUNT, useWorkspaceStore } from '@/stores/useWorkspaceStore';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useOverscrollGlow } from '@/composables/useOverscrollGlow';
+import OverscrollGlow from '@/components/OverscrollGlow.vue';
 
 const workspace = useWorkspaceStore();
+const settings = useSettingsStore();
 
 const el = ref<HTMLElement>();
+
+const glow = useOverscrollGlow(el, 'x', () => settings.gingerbreadOverscroll);
 
 function scrollToPage(page: number, smooth: boolean)
 {
@@ -40,22 +46,40 @@ watch(() => workspace.pendingPage, page =>
 </script>
 
 <template>
-    <div class="workspace" ref="el" @scroll.passive="onScroll">
-        <section
-            v-for="i in PAGE_COUNT"
-            :key="i"
-            class="page">
-            <slot :page="i - 1"></slot>
-        </section>
+    <div class="workspace-frame">
+        <div class="inner">
+            <div class="scroller" ref="el" @scroll.passive="onScroll">
+                <section
+                    v-for="i in PAGE_COUNT"
+                    :key="i"
+                    class="page">
+                    <slot :page="i - 1"></slot>
+                </section>
+            </div>
+            <OverscrollGlow edge="left" :intensity="glow.start.value" :pulling="glow.pulling.value" />
+            <OverscrollGlow edge="right" :intensity="glow.end.value" :pulling="glow.pulling.value" />
+        </div>
     </div>
 </template>
 
 <style scoped lang="scss">
-.workspace {
+.workspace-frame {
+    width: 100%;
+    height: 100%;
+
+    > .inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+}
+
+.scroller {
     display: flex;
     width: 100%;
     height: 100%;
     overflow-x: auto;
+    overscroll-behavior-x: none;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;

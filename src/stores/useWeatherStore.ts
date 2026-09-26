@@ -11,6 +11,17 @@ export interface WeatherCity
     longitude: number;
 }
 
+/** One day of the forecast; `date` is "YYYY-MM-DD" and the sun times "YYYY-MM-DDTHH:mm", both in the city's time. */
+export interface WeatherDay
+{
+    date: string;
+    code: number;
+    max: number;
+    min: number;
+    sunrise: string;
+    sunset: string;
+}
+
 export interface WeatherData
 {
     temperature: number;
@@ -18,8 +29,13 @@ export interface WeatherData
     isDay: boolean;
     max: number;
     min: number;
+    /** Today and the next days, for the forecast and sun widgets (missing in data cached by older versions). */
+    days?: WeatherDay[];
     fetchedAt: number;
 }
+
+// today plus 5 days, for the extended forecast
+const FORECAST_DAYS = 6;
 
 export type WeatherStatus = 'idle' | 'loading' | 'error';
 
@@ -50,9 +66,9 @@ export const useWeatherStore = defineStore('weather', () =>
                 latitude: String(c.latitude),
                 longitude: String(c.longitude),
                 current: 'temperature_2m,weather_code,is_day',
-                daily: 'temperature_2m_max,temperature_2m_min',
+                daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset',
                 timezone: 'auto',
-                forecast_days: '1',
+                forecast_days: String(FORECAST_DAYS),
             });
             const resp = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -64,6 +80,14 @@ export const useWeatherStore = defineStore('weather', () =>
                 isDay: json.current.is_day === 1,
                 max: json.daily.temperature_2m_max[0],
                 min: json.daily.temperature_2m_min[0],
+                days: (json.daily.time as string[]).map((date, i) => ({
+                    date,
+                    code: json.daily.weather_code[i],
+                    max: json.daily.temperature_2m_max[i],
+                    min: json.daily.temperature_2m_min[i],
+                    sunrise: json.daily.sunrise[i],
+                    sunset: json.daily.sunset[i],
+                })),
                 fetchedAt: Date.now(),
             };
             status.value = 'idle';
@@ -78,7 +102,8 @@ export const useWeatherStore = defineStore('weather', () =>
 
     function refreshIfStale()
     {
-        if (!data.value || Date.now() - data.value.fetchedAt > REFRESH_INTERVAL_MS)
+        // data cached before the forecast was added has no days
+        if (!data.value || !data.value.days || Date.now() - data.value.fetchedAt > REFRESH_INTERVAL_MS)
             refreshAsync();
     }
 

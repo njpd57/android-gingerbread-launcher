@@ -1,20 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useDocumentVisibility, usePreferredReducedMotion, useResizeObserver } from '@vueuse/core';
-import type { BridgeEventListener } from '@bridgelauncher/api';
-import { useBridgeEventStore } from '@/stores/useBridgeEventStore';
-import { useDrawerStore } from '@/stores/useDrawerStore';
-import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
+import { ref } from 'vue';
 import { NEXUS_PULSES, NEXUS_SPEED, useSettingsStore } from '@/stores/useSettingsStore';
+import { useLiveWallpaper, type WallpaperSize } from './useLiveWallpaper';
 
 // A recreation of the "Nexus" live wallpaper: glowing colored pulses
 // travelling along an invisible grid over a dark background.
 
 const GRID = 48;
-const PARALLAX_WIDTH = 1.5; // wallpaper width relative to the screen
-const MAX_DPR = 2;
-// rAF timestamps jitter slightly, so allow frames a bit early to avoid skipping every other one
-const FRAME_TOLERANCE_MS = 2;
 
 type RGB = [number, number, number];
 
@@ -39,29 +31,18 @@ interface Pulse
     travelled: number;
 }
 
-const bridgeEvents = useBridgeEventStore();
-const drawer = useDrawerStore();
-const workspace = useWorkspaceStore();
 const settings = useSettingsStore();
 
 const maxPulses = () => NEXUS_PULSES[settings.nexusDensity];
-const frameMs = () => 1000 / settings.nexusFps;
-
-const visibility = useDocumentVisibility();
-const reducedMotion = usePreferredReducedMotion();
-const bridgePaused = ref(false);
 
 const canvasEl = ref<HTMLCanvasElement>();
 
-let ctx: CanvasRenderingContext2D | null = null;
 let background: HTMLCanvasElement | null = null;
 let w = 0;
 let h = 0;
 let dpr = 1;
 let worldW = 0;
 let pulses: Pulse[] = [];
-let rafId = 0;
-let lastFrame = 0;
 
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
@@ -196,15 +177,10 @@ function drawPulse(c: CanvasRenderingContext2D, p: Pulse)
     c.fillRect(p.x - r, p.y - r, r * 2, r * 2);
 }
 
-function draw()
+function draw(ctx: CanvasRenderingContext2D, offsetX: number)
 {
-    if (!ctx || !background) return;
+    if (!background) return;
 
-    const offsetX = workspace.scrollProgress * (worldW - w);
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
     ctx.drawImage(background, offsetX * dpr, 0, w * dpr, h * dpr, 0, 0, w, h);
 
     ctx.translate(-offsetX, 0);
@@ -231,101 +207,27 @@ function step(dt: number)
     pulses = alive;
 }
 
-function loop(t: number)
+function resize(size: WallpaperSize)
 {
-    rafId = requestAnimationFrame(loop);
-    if (t - lastFrame < frameMs() - FRAME_TOLERANCE_MS) return;
-    const dt = Math.min((t - lastFrame) / 1000, 0.1);
-    lastFrame = t;
-    step(dt);
-    draw();
-}
-
-function start()
-{
-    if (rafId) return;
-    lastFrame = performance.now();
-    rafId = requestAnimationFrame(loop);
-}
-
-function stop()
-{
-    cancelAnimationFrame(rafId);
-    rafId = 0;
-}
-
-const shouldAnimate = computed(() =>
-    !drawer.isOpen
-    && !bridgePaused.value
-    && visibility.value === 'visible'
-    && reducedMotion.value !== 'reduce'
-);
-
-function resize()
-{
-    const canvas = canvasEl.value;
-    if (!canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) return;
-
-    w = canvas.clientWidth;
-    h = canvas.clientHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-    worldW = w * PARALLAX_WIDTH;
-
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
-    ctx = canvas.getContext('2d');
-
+    ({ w, h, dpr, worldW } = size);
     renderBackground();
-
     if (pulses.length === 0)
         pulses = Array.from({ length: maxPulses() }, spawnInside);
-
-    draw();
 }
 
+const { shouldAnimate, offsetX } = useLiveWallpaper(canvasEl, { resize, step, draw });
+
 /** Sends pulses out in all four directions from a tapped point. */
-function burst(clientX: number, clientY: number)
+function tap(clientX: number, clientY: number)
 {
     if (!shouldAnimate.value) return;
-    const offsetX = workspace.scrollProgress * (worldW - w);
-    const x = snap(clientX + offsetX);
+    const x = snap(clientX + offsetX());
     const y = snap(clientY);
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]])
         pulses.push(makePulse(x, y, dx, dy, 0));
 }
 
-defineExpose({ burst });
-
-const onBridgeEvent: BridgeEventListener = ev =>
-{
-    if (ev.name === 'beforePause')
-        bridgePaused.value = true;
-    else if (ev.name === 'afterResume')
-        bridgePaused.value = false;
-};
-
-bridgeEvents.addEventListener(onBridgeEvent);
-
-useResizeObserver(canvasEl, resize);
-
-onMounted(() =>
-{
-    resize();
-    watch(shouldAnimate, animate => animate ? start() : stop(), { immediate: true });
-});
-
-// while not animating (e.g. reduced motion), still follow page scrolling
-watch(() => workspace.scrollProgress, () =>
-{
-    if (!rafId) draw();
-});
-
-onBeforeUnmount(() =>
-{
-    stop();
-    bridgeEvents.removeEventListener(onBridgeEvent);
-});
-
+defineExpose({ tap });
 </script>
 
 <template>

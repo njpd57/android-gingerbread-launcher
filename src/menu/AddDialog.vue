@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useElementSize } from '@vueuse/core';
 import { useAppsStore, type InstalledAppInfo } from '@/stores/useAppsStore';
-import { useHomeLayoutStore, WIDGET_SIZES, type WidgetKind } from '@/stores/useHomeLayoutStore';
+import { GRID_COLS, useHomeLayoutStore, WIDGET_SIZES, type WidgetKind } from '@/stores/useHomeLayoutStore';
 import { useMenuStore } from '@/stores/useMenuStore';
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import GbDialog from '@/components/GbDialog.vue';
 import FolderIcon from '@/home/icons/FolderIcon.vue';
+import WidgetView from '@/widgets/WidgetView.vue';
+import { useHomeGridSize } from '@/composables/useHomeGridSize';
 
 type View = 'root' | 'apps' | 'widgets';
 
@@ -38,8 +41,55 @@ const sortedApps = computed(() =>
 const widgets: { kind: WidgetKind; label: string }[] = [
     { kind: 'clock', label: 'Reloj analógico' },
     { kind: 'clockLarge', label: 'Reloj analógico grande' },
+    { kind: 'digitalClock', label: 'Reloj digital' },
+    { kind: 'timer', label: 'Cronómetro y temporizador' },
+    { kind: 'countdown', label: 'Cuenta regresiva' },
+    { kind: 'calendar', label: 'Calendario' },
+    { kind: 'agenda', label: 'Agenda' },
+    { kind: 'battery', label: 'Batería' },
+    { kind: 'quote', label: 'Frase del día' },
+    { kind: 'note', label: 'Nota' },
+    { kind: 'tasks', label: 'Tareas' },
+    { kind: 'calculator', label: 'Calculadora' },
+    { kind: 'photo', label: 'Marco de fotos' },
+    { kind: 'music', label: 'Música' },
+    { kind: 'musicSongbird', label: 'Música (estilo Songbird)' },
     { kind: 'weather', label: 'Tiempo' },
+    { kind: 'forecast', label: 'Pronóstico' },
+    { kind: 'sunMoon', label: 'Sol y luna' },
+    { kind: 'rss', label: 'Titulares' },
+    { kind: 'power', label: 'Control de energía' },
+    { kind: 'search', label: 'Búsqueda de aplicaciones' },
+    { kind: 'mostUsed', label: 'Apps más usadas' },
+    { kind: 'screenTime', label: 'Tiempo de pantalla' },
+    { kind: 'favContacts', label: 'Contactos favoritos' },
+    { kind: 'directCall', label: 'Marcación directa' },
+    { kind: 'directMessage', label: 'Mensaje directo' },
 ];
+
+// live previews: each widget is rendered at the size it has on the home screen, then scaled down by
+// the same factor for all, so a full-width (4-column) widget fills the list and the rest keep their
+// proportions
+const PREVIEW_PADDING = 16;
+const listEl = ref<HTMLElement>();
+const { width: listWidth } = useElementSize(listEl);
+const { cellWidth, cellHeight } = useHomeGridSize();
+const previewScale = computed(() =>
+    Math.min(1, Math.max(0, listWidth.value - 2 * PREVIEW_PADDING) / (GRID_COLS * cellWidth.value)));
+
+function previewStyle(kind: WidgetKind)
+{
+    const { w, h } = WIDGET_SIZES[kind];
+    const scale = previewScale.value;
+    return {
+        box: { width: `${w * cellWidth.value * scale}px`, height: `${h * cellHeight.value * scale}px` },
+        widget: {
+            width: `${w * cellWidth.value}px`,
+            height: `${h * cellHeight.value}px`,
+            transform: `scale(${scale})`,
+        },
+    };
+}
 
 /** Where a new item of this size goes: the long-pressed cell if it fits, otherwise the first free spot on that page. */
 function findSpot(w: number, h: number)
@@ -128,18 +178,28 @@ function addFolder()
             <div v-if="sortedApps.length === 0" class="empty">Cargando aplicaciones…</div>
         </template>
 
-        <template v-else>
-            <button
+        <div v-else ref="listEl" class="widget-list">
+            <!-- a div, not a button: the live widget inside has buttons of its own -->
+            <div
                 v-for="w in widgets"
                 :key="w.kind"
-                class="row"
-                @click="addWidget(w.kind)">
+                class="widget-row"
+                role="button"
+                tabindex="0"
+                @click="addWidget(w.kind)"
+                @keydown.enter="addWidget(w.kind)">
+                <div class="preview" :style="previewStyle(w.kind).box">
+                    <!-- the real widget, live but not interactive -->
+                    <div class="live" :style="previewStyle(w.kind).widget" inert>
+                        <WidgetView :kind="w.kind" />
+                    </div>
+                </div>
                 <span class="text">
                     <span>{{ w.label }}</span>
                     <span class="hint">{{ WIDGET_SIZES[w.kind].w }} × {{ WIDGET_SIZES[w.kind].h }}</span>
                 </span>
-            </button>
-        </template>
+            </div>
+        </div>
 
     </GbDialog>
 </template>
@@ -182,6 +242,57 @@ function addFolder()
             font-size: 13px;
             opacity: 0.65;
         }
+    }
+}
+
+.widget-list {
+    display: flex;
+    flex-direction: column;
+}
+
+// the preview sits on a dark "home screen" strip, with the name and size underneath
+.widget-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(#fff, 0.1);
+    color: #fff;
+    cursor: pointer;
+
+    > .preview {
+        position: relative;
+        overflow: hidden;
+        pointer-events: none;
+
+        > .live {
+            position: absolute;
+            top: 0;
+            left: 0;
+            // same padding as a home screen cell (HomeGrid)
+            padding: 4px;
+            transform-origin: top left;
+        }
+    }
+
+    > .text {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        font-size: 16px;
+
+        > .hint {
+            font-size: 13px;
+            opacity: 0.65;
+        }
+    }
+
+    // Gingerbread orange behind the whole row while pressed
+    &:active {
+        background: linear-gradient(to bottom, #ffc64d, #ff8a00);
+        color: #111;
     }
 }
 

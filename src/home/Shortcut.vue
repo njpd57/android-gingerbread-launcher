@@ -27,8 +27,9 @@ defineProps<{
 
     > img,
     > :deep(svg) {
-        width: 48px;
-        height: 48px;
+        // set on .launcher-root from the "Tamaño de los iconos" setting
+        width: var(--icon-size, 48px);
+        height: var(--icon-size, 48px);
         flex-shrink: 0;
         // Gingerbread icons carried a soft shadow underneath
         filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));

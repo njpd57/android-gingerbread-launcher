@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useOverscrollGlow } from '@/composables/useOverscrollGlow';
+import OverscrollGlow from './OverscrollGlow.vue';
+import { useKeyboardInset } from '@/composables/useKeyboardInset';
+
 defineProps<{
     open: boolean;
     title: string;
@@ -8,15 +14,29 @@ const emit = defineEmits<{
     close: [];
 }>();
 
+const settings = useSettingsStore();
+const bodyEl = ref<HTMLElement>();
+const glow = useOverscrollGlow(bodyEl, 'y', () => settings.gingerbreadOverscroll);
+// a dialog with a text field recenters above the keyboard
+const keyboardInset = useKeyboardInset();
+
 </script>
 
 <template>
     <Transition name="dialog">
-        <div v-if="open" class="gb-dialog-overlay" @click.self="emit('close')">
+        <div
+            v-if="open"
+            class="gb-dialog-overlay"
+            :style="{ 'padding-bottom': `${16 + keyboardInset}px` }"
+            @click.self="emit('close')">
             <div class="gb-dialog" role="dialog" :aria-label="title">
                 <header class="title">{{ title }}</header>
-                <div class="body">
-                    <slot></slot>
+                <div class="body-wrap">
+                    <div class="body" ref="bodyEl">
+                        <slot></slot>
+                    </div>
+                    <OverscrollGlow edge="top" :intensity="glow.start.value" :pulling="glow.pulling.value" />
+                    <OverscrollGlow edge="bottom" :intensity="glow.end.value" :pulling="glow.pulling.value" />
                 </div>
                 <footer v-if="$slots.buttons" class="buttons">
                     <slot name="buttons"></slot>
@@ -55,9 +75,17 @@ const emit = defineEmits<{
         color: #fff;
     }
 
-    > .body {
-        overflow-y: auto;
-        padding: 8px 0;
+    > .body-wrap {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+
+        > .body {
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 8px 0;
+        }
     }
 
     > .buttons {

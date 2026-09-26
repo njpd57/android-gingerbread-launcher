@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useNow } from '@vueuse/core';
+import { useAlarmStore } from '@/stores/useAlarmStore';
 
 const now = useNow({ interval: 1000 });
+
+// tapping the clock opens a clock app, like Gingerbread's alarm app; long-pressing still drags it
+// (HomeGrid discards the click that ends a long press before it reaches us)
+const alarm = useAlarmStore();
+
+function openClockApp()
+{
+    alarm.openAlarms();
+}
 
 const hourAngle = computed(() =>
 {
@@ -24,7 +34,12 @@ const ticks = Array.from({ length: 12 }, (_, i) => ({
 </script>
 
 <template>
-    <svg class="analog-clock" viewBox="0 0 200 200" role="img" :aria-label="now.toLocaleTimeString()">
+    <svg
+        class="analog-clock"
+        viewBox="0 0 200 200"
+        role="img"
+        :aria-label="now.toLocaleTimeString()"
+        @click="openClockApp">
         <defs>
             <radialGradient id="clock-face" cx="0.4" cy="0.35" r="0.75">
                 <stop offset="0" stop-color="#ffffff" />
@@ -83,5 +98,6 @@ const ticks = Array.from({ length: 12 }, (_, i) => ({
     width: 100%;
     height: auto;
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.6));
+    cursor: pointer;
 }
 </style>

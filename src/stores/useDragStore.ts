@@ -6,6 +6,9 @@ import { useWorkspaceStore } from "./useWorkspaceStore";
 const EDGE_PX = 28;
 const EDGE_DELAY_MS = 650;
 const CLICK_GUARD_MS = 400;
+// the finger has to move this far before a long press counts as a drag; lifting it before that cancels
+// the drag, which leaves the app shortcuts menu (opened by the same long press) on screen
+export const DRAG_MOVE_PX = 16;
 
 export type DragPayload =
     | { source: 'drawer'; packageName: string; label: string }
@@ -14,7 +17,7 @@ export type DragPayload =
 
 export type DragGhost =
     | { type: 'app'; packageName: string; label: string }
-    | { type: 'widget'; widget: WidgetKind }
+    | { type: 'widget'; widget: WidgetKind; id: string }
     | { type: 'folder'; name: string };
 
 export type DropTarget =
@@ -42,6 +45,9 @@ export const useDragStore = defineStore('drag', () =>
 
     const active = ref<ActiveDrag | null>(null);
     const pointer = ref({ x: 0, y: 0 });
+    const startPointer = { x: 0, y: 0 };
+    /** Whether the finger has moved since the drag started (see DRAG_MOVE_PX). */
+    const hasMoved = ref(false);
     const target = ref<DropTarget | null>(null);
 
     const draggedItemId = computed(() =>
@@ -164,6 +170,8 @@ export const useDragStore = defineStore('drag', () =>
     function onPointerMove(e: PointerEvent)
     {
         pointer.value = { x: e.clientX, y: e.clientY };
+        if (!hasMoved.value && Math.hypot(e.clientX - startPointer.x, e.clientY - startPointer.y) > DRAG_MOVE_PX)
+            hasMoved.value = true;
         updateTarget();
         updateEdgePaging();
     }
@@ -206,7 +214,7 @@ export const useDragStore = defineStore('drag', () =>
             if (!item) return;
             ghost = item.type === 'app' ? { type: 'app', packageName: item.packageName, label: item.label }
                 : item.type === 'folder' ? { type: 'folder', name: item.name }
-                    : { type: 'widget', widget: item.widget };
+                    : { type: 'widget', widget: item.widget, id: item.id };
             w = item.w;
             h = item.h;
         }
@@ -232,6 +240,9 @@ export const useDragStore = defineStore('drag', () =>
             offsetY: sourceRect ? Math.min(ghostHeight, Math.max(0, y - sourceRect.top)) : ghostHeight / 2,
         };
         pointer.value = { x, y };
+        startPointer.x = x;
+        startPointer.y = y;
+        hasMoved.value = false;
         updateTarget();
         attachListeners();
     }
@@ -242,6 +253,7 @@ export const useDragStore = defineStore('drag', () =>
         clearEdgeTimer();
         active.value = null;
         target.value = null;
+        hasMoved.value = false;
         lastDropTime = Date.now();
     }
 
@@ -250,7 +262,8 @@ export const useDragStore = defineStore('drag', () =>
         const a = active.value;
         const t = target.value;
 
-        if (a && t)
+        // a long press released in place only opened the shortcuts menu; nothing moves
+        if (a && t && hasMoved.value)
             applyDrop(a, t);
 
         finish();
@@ -271,6 +284,10 @@ export const useDragStore = defineStore('drag', () =>
         {
             if (p.source === 'home')
                 layout.removeItem(p.itemId);
+            // like Gingerbread: dropping an app from the drawer on the trash uninstalls it
+            // (Android asks for confirmation; appRemoved then cleans up the home screen)
+            else if (p.source === 'drawer')
+                Bridge.requestAppUninstall(p.packageName, true);
             return;
         }
 
@@ -315,6 +332,7 @@ export const useDragStore = defineStore('drag', () =>
     return {
         active,
         pointer,
+        hasMoved,
         target,
         draggedItemId,
         trashEl,
