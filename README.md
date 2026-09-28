@@ -63,8 +63,8 @@ La configuración y el diseño del escritorio se guardan en el propio teléfono.
 1. Instala [Bridge Launcher](https://github.com/bridgelauncher/launcher), o [nuestro fork](https://github.com/njpd57/bridge-launcher) para tener todas las funciones, y ponlo como launcher predeterminado. El fork se compila con `./gradlew assembleDebug` y se instala con `adb install`. Tiene otra firma que el Bridge publicado, así que antes hay que desinstalar el original.
 2. Descarga el proyecto y genera el build:
    ```bash
-   git clone https://github.com/njpd57/gingerbread-bridge-launcher
-   cd gingerbread-bridge-launcher
+   git clone https://github.com/njpd57/android-gingerbread-launcher
+   cd android-gingerbread-launcher
    npm install
    npm run build
    ```

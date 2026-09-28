@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A recreation of the Android 2.3 **Gingerbread** home screen launcher, built as a web project for [Bridge Launcher](https://github.com/bridgelauncher/launcher). Bridge is an Android app that shows a WebView as the home screen and exposes Android features to it through `window.Bridge`. It started as a fork of Bridge's `api-tester` example and now lives in its own repo (`github.com/njpd57/gingerbread-bridge-launcher`). There is no native Android code here.
+A recreation of the Android 2.3 **Gingerbread** home screen launcher, built as a web project for [Bridge Launcher](https://github.com/bridgelauncher/launcher). Bridge is an Android app that shows a WebView as the home screen and exposes Android features to it through `window.Bridge`. It started as a fork of Bridge's `api-tester` example and now lives in its own repo (`github.com/njpd57/android-gingerbread-launcher`). There is no native Android code here.
 
 `FEATURES.md` is the roadmap: every idea with the Bridge API calls it needs, marked ✅ when done and ◐ when partly done. `README.md` is the user-facing documentation (in Spanish), including the optional permissions.
 
