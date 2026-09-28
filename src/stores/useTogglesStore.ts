@@ -6,6 +6,11 @@ import type { BridgeButtonVisibility, OverscrollEffects, SystemNightModeOrError,
 import { bridgeRequest, showToast } from "@/utils/toast";
 import { API_LEVELS, supportsApiLevel } from "@/utils/androidVersion";
 
+/** How long App.vue's screen-off animation lasts before the screen locks. */
+export const SCREEN_OFF_ANIMATION_MS = 450;
+// after asking to lock, when to undo the animation (the screen is off by then)
+const SCREEN_OFF_RESET_MS = 1500;
+
 export const useTogglesStore = defineStore('toggles', () => 
 {
     const bridgeEvents = useBridgeEventStore();
@@ -28,6 +33,8 @@ export const useTogglesStore = defineStore('toggles', () =>
     const supportsNightMode = bridgeSetsNightMode && androidSetsNightMode;
 
     const canLockScreen = ref(false);
+    // App.vue plays the screen-off animation while true
+    const screenTurningOff = ref(false);
     const canRequestSystemNightMode = ref(false);
 
     // permissions can be granted outside Bridge (e.g. `adb shell pm grant`) without an event,
@@ -59,7 +66,17 @@ export const useTogglesStore = defineStore('toggles', () =>
             bridgeRequest(t => Bridge.requestOpenBridgeSettings(t));
             return false;
         }
-        return bridgeRequest(t => Bridge.requestLockScreen(t));
+        // Gingerbread's "old TV" screen-off: App.vue collapses the launcher into a line first,
+        // then the screen locks. The animation is undone once the screen is surely off, so the
+        // launcher is back to normal on unlock.
+        if (screenTurningOff.value) return true;
+        screenTurningOff.value = true;
+        setTimeout(() =>
+        {
+            const locked = bridgeRequest(t => Bridge.requestLockScreen(t));
+            setTimeout(() => screenTurningOff.value = false, locked ? SCREEN_OFF_RESET_MS : 0);
+        }, SCREEN_OFF_ANIMATION_MS);
+        return true;
     }
 
     function toggleNightMode()
@@ -142,6 +159,7 @@ export const useTogglesStore = defineStore('toggles', () =>
         canLockScreen: readonly(canLockScreen),
         canRequestSystemNightMode: readonly(canRequestSystemNightMode),
         lockScreen,
+        screenTurningOff: readonly(screenTurningOff),
         toggleNightMode,
     };
 });

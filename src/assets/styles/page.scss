@@ -6,6 +6,11 @@ html, body {
     background: none;
 }
 
+// while the launcher plays the screen-off animation (App.vue)
+html.screen-off {
+    background: #000;
+}
+
 #app {
     width: 100%;
     height: 100%;
