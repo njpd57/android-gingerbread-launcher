@@ -4,9 +4,11 @@ import { useWindowInsetsStore } from '@/stores/useWindowInsetsStore';
 import { useMenuStore } from '@/stores/useMenuStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useDragStore } from '@/stores/useDragStore';
+import { SCREEN_OFF_ANIMATION_MS, useTogglesStore } from '@/stores/useTogglesStore';
 import { autoGridRows, useHomeLayoutStore } from '@/stores/useHomeLayoutStore';
 import { DOCK_HEIGHT, useHomeGridSize } from '@/composables/useHomeGridSize';
 import { useLongPress } from '@/composables/useLongPress';
+import { useShadePull } from '@/composables/useShadePull';
 import { fittedIconSize, scaledIconSize } from '@/utils/iconSize';
 import Workspace from './home/Workspace.vue';
 import HomeGrid from './home/HomeGrid.vue';
@@ -37,6 +39,10 @@ const menu = useMenuStore();
 const settings = useSettingsStore();
 const drag = useDragStore();
 const layout = useHomeLayoutStore();
+const toggles = useTogglesStore();
+
+// the page behind the launcher goes black while it collapses, covering the system wallpaper
+watchEffect(() => document.documentElement.classList.toggle('screen-off', toggles.screenTurningOff));
 
 // fit as many Gingerbread-shaped rows as the screen allows (tall phones get more).
 // Only measured in portrait: in landscape the rows stay as they were, because fewer rows would
@@ -72,6 +78,9 @@ function isEmptySpace(target: EventTarget | null)
 // long-pressing empty space opens the options menu, remembering the cell for "Añadir"
 const longPress = useLongPress<null>((_, pos) => menu.showOptionsMenu(drag.cellAt(pos.x, pos.y)));
 
+// swiping down on the home screen or our status bar pulls the notification panel down
+const shade = useShadePull();
+
 function onPointerDown(e: PointerEvent)
 {
     if (isEmptySpace(e.target))
@@ -95,8 +104,9 @@ function onWorkspaceClick(e: MouseEvent)
 <template>
     <div
         class="launcher-root"
-        :class="{ 'system-wallpaper': settings.wallpaper === 'system' }"
+        :class="{ 'system-wallpaper': settings.wallpaper === 'system', 'screen-off': toggles.screenTurningOff }"
         :style="{
+            '--screen-off-duration': `${SCREEN_OFF_ANIMATION_MS}ms`,
             '--status-bar-height': insets.statusBarCss,
             '--nav-bar-height': insets.navigationBarCss,
             '--icon-size': `${homeIconSize}px`,
@@ -112,6 +122,10 @@ function onWorkspaceClick(e: MouseEvent)
             @pointerup="longPress.cancel"
             @pointercancel="longPress.cancel"
             @pointerleave="longPress.cancel"
+            @touchstart.passive="shade.onTouchStart"
+            @touchmove="shade.onTouchMove"
+            @touchend.passive="shade.onTouchEnd"
+            @touchcancel.passive="shade.onTouchEnd"
             @contextmenu.prevent
             @click="onWorkspaceClick"
             :style="{
@@ -159,6 +173,10 @@ function onWorkspaceClick(e: MouseEvent)
         <GingerbreadStatusBar
             v-if="settings.gingerbreadStatusBar"
             class="gb-status-bar"
+            @touchstart.passive="shade.onTouchStart"
+            @touchmove="shade.onTouchMove"
+            @touchend.passive="shade.onTouchEnd"
+            @touchcancel.passive="shade.onTouchEnd"
             :background="settings.statusBarBackground"
             :side-margin="settings.statusBarSideMargin"
             :style="{ 'height': 'var(--status-bar-height)' }" />
@@ -176,6 +194,18 @@ function onWorkspaceClick(e: MouseEvent)
 </template>
 
 <style scoped lang="scss">
+@keyframes screen-off-collapse {
+    0% { transform: scale(1, 1); }
+    60% { transform: scale(1, 0.004); }
+    100% { transform: scale(0, 0.004); }
+}
+
+@keyframes screen-off-flash {
+    0% { opacity: 0; }
+    50% { opacity: 0.9; }
+    60%, 100% { opacity: 1; }
+}
+
 .launcher-root {
     position: relative;
     width: 100%;
@@ -190,6 +220,22 @@ function onWorkspaceClick(e: MouseEvent)
 
     > .workspace {
         position: relative;
+    }
+
+    // Gingerbread's screen-off, like an old TV: the picture brightens as it collapses into a
+    // white line, and the line shrinks to nothing
+    &.screen-off {
+        pointer-events: none;
+        animation: screen-off-collapse var(--screen-off-duration) ease-in forwards;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 10000;
+            background: #fff;
+            animation: screen-off-flash var(--screen-off-duration) ease-in forwards;
+        }
     }
 
     > .dock {

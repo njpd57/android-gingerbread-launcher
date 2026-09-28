@@ -17,6 +17,7 @@ import QuickToggles from './QuickToggles.vue';
 import MusicPlayer from '@/widgets/music/MusicPlayer.vue';
 import { useMediaStore } from '@/stores/useMediaStore';
 import { bridgeRequest } from '@/utils/toast';
+import { useShadePull } from '@/composables/useShadePull';
 
 // Our own notification panel, in the style of Gingerbread's (2.3's dark one): "Borrar" at the top,
 // "En curso" and "Notificaciones" sections, and a handle at the bottom to close it. On top, a row of
@@ -55,7 +56,7 @@ function iconUrl(n: BridgeNotification)
 {
     if (n.hasLargeIcon)
         return Bridge.getNotificationIconURL(n.key, true);
-    return Bridge.getDefaultAppIconURL(n.packageName);
+    return apps.iconURL({ packageName: n.packageName });
 }
 
 // the small icon is only a silhouette (Android tints it), so it's drawn as a mask in a light color,
@@ -148,6 +149,18 @@ function clearAll()
     }
 }
 
+// while a finger pulls the panel it follows it; its CSS transition animates the rest
+const shade = useShadePull();
+const pullStyle = computed(() => menu.notificationPull === null
+    ? undefined
+    : { transform: `translateY(calc(${menu.notificationPull}px - 100%))` });
+
+function onHandleClick()
+{
+    if (!shade.consumeHandleDrag())
+        menu.closeAll();
+}
+
 function openSystemShade()
 {
     menu.closeAll();
@@ -157,7 +170,11 @@ function openSystemShade()
 
 <template>
     <Transition name="shade">
-        <div v-if="menu.isNotificationPanelOpen" class="notification-panel">
+        <div
+            v-if="menu.isNotificationPanelOpen || menu.notificationPull !== null"
+            class="notification-panel"
+            :class="{ dragging: menu.notificationPullDragging }"
+            :style="pullStyle">
             <QuickToggles v-if="qs.isSupported" class="quick-toggles" />
 
             <div class="header">
@@ -254,7 +271,14 @@ function openSystemShade()
             </GbDialog>
 
             <!-- Gingerbread's grip at the bottom of the shade -->
-            <button class="handle" aria-label="Cerrar notificaciones" @click="menu.closeAll()">
+            <button
+                class="handle"
+                aria-label="Cerrar notificaciones"
+                @pointerdown="shade.onHandleDown"
+                @pointermove="shade.onHandleMove"
+                @pointerup="shade.onHandleUp"
+                @pointercancel="shade.onHandleUp"
+                @click="onHandleClick">
                 <span class="grip"></span>
             </button>
         </div>
@@ -273,6 +297,12 @@ $gingerbread-orange: #ffa800;
     padding: calc(var(--status-bar-height) + 8px) 8px var(--nav-bar-height);
     background-color: #000;
     color: #fff;
+    // finishes opening or closing after a pull (SHADE_SETTLE_MS); none while it follows the finger
+    transition: transform 0.25s $ease-mat-decel;
+
+    &.dragging {
+        transition: none;
+    }
 
     > .header {
         display: flex;
@@ -546,6 +576,8 @@ $gingerbread-orange: #ffa800;
         border-top: 1px solid #555;
         background: linear-gradient(to bottom, #4a4a4a, #1a1a1a);
         cursor: pointer;
+        // dragged up by the finger (useShadePull), not scrolled
+        touch-action: none;
 
         > .grip {
             width: 48px;

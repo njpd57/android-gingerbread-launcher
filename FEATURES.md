@@ -9,13 +9,13 @@ Revisión de todo lo que ofrece `@bridgelauncher/api` v0.1.0 (la última publica
 | Área | Ya se usa | Sin usar |
 |---|---|---|
 | Apps | `getAppsURL`, `getDefaultAppIconURL`, `requestLaunchApp`, `requestAppUninstall`, `requestOpenAppInfo`, eventos `appInstalled` / `appChanged` / `appRemoved` | — |
-| Fondo de pantalla | `setWallpaperOffsetSteps`, `setWallpaperOffsets`, `requestChangeSystemWallpaper`, dibujar el fondo del sistema detrás del WebView | `sendWallpaperTap` |
+| Fondo de pantalla | `setWallpaperOffsetSteps`, `setWallpaperOffsets`, `sendWallpaperTap`, `requestChangeSystemWallpaper`, dibujar el fondo del sistema detrás del WebView | — |
 | Barras del sistema | Apariencia de la barra de estado (incluido ocultarla), insets de barras, del recorte de la cámara y del teclado (`getImeWindowInsets`) | Gestos (`systemGestures`, `mandatorySystemGestures`), `tappableElement`, `captionBar`, `waterfall`, `getDisplayCutoutPath`, `getDisplayShapePath` |
 | Ajustes de Bridge | Botón flotante, efectos de overscroll, "dibujar el fondo del sistema detrás del WebView", modo noche del sistema (`requestSetSystemNightMode`), tema de Bridge (oscuro con la barra Gingerbread, idea 50) | — |
 | Sistema | `requestExpandNotificationShade`, `requestOpenAndroidSettings`, `requestOpenBridgeSettings`, `requestLockScreen` / `getCanLockScreen`, `showToast`, `requestOpenDeveloperConsole` y `getLastErrorMessage` (diagnóstico) | `requestOpenBridgeAppDrawer` |
 | Información | `getAndroidAPILevel`, `getBridgeVersionName`, `getBridgeVersionCode` (diagnóstico) | `getProjectURL` |
 | Ciclo de vida | `newIntent` (botón de inicio), `beforePause`, `afterResume` | — |
-| Solo en nuestro fork de Bridge | `requestSetScreenOrientation` (vertical fija), `getDefaultAppPackageName` (dock), `requestOpenUrl` (búsqueda web), notificaciones (`getNotificationsURL`, `getNotificationIconURL`, `requestOpenNotification`, `requestDismissNotification` y sus eventos: iconos reales en la barra de estado y panel de notificaciones propio), ajustes rápidos (linterna, brillo, rotación, sincronización, modo de sonido (`requestSetRingerMode`, necesita "Acceso a No molestar") y `requestOpenSystemPanel` para Wi-Fi y Bluetooth; también en el widget Control de energía), música (`getMediaSession`, `requestMediaAction`: widget "Música" y reproductor en el panel), calendario (`getCalendarEventsURL`, `requestOpenCalendarEvent`, `requestOpenCalendarAt`: widget Agenda y eventos en el calendario del mes), estado de Wi-Fi y Bluetooth (`getWifiEnabled`, `getBluetoothEnabled`), señal real (`getConnectivity`: barras, Wi-Fi y flechas de datos en la barra Gingerbread), accesos directos de apps (`getAppShortcutsURL`, `requestStartAppShortcut`), selector de archivos para `<input type="file">` (marco de fotos), contactos y llamadas (`getContactsURL`, `requestCallPhoneNumber`: contactos en la búsqueda), descargar sin CORS (`getProxyURL`: cualquier feed en el widget de titulares), batería (`getBattery`, sin consumidor todavía) | `getScreenOrientation`, evento `screenOrientationChanged`; `getDefaultAppPackageName` para `sms`, `email` y `camera` (idea 44); la última vez que se usó cada app, en `getAppUsageURL` (idea 42) |
+| Solo en nuestro fork de Bridge | `requestSetScreenOrientation` (vertical fija), `getDefaultAppPackageName` (dock), `requestOpenUrl` (búsqueda web), notificaciones (`getNotificationsURL`, `getNotificationIconURL`, `requestOpenNotification`, `requestDismissNotification` y sus eventos: iconos reales en la barra de estado y panel de notificaciones propio), ajustes rápidos (linterna, brillo, rotación, sincronización, modo de sonido (`requestSetRingerMode`, necesita "Acceso a No molestar") y `requestOpenSystemPanel` para Wi-Fi y Bluetooth; también en el widget Control de energía), música (`getMediaSession`, `requestMediaAction`: widget "Música" y reproductor en el panel), calendario (`getCalendarEventsURL`, `requestOpenCalendarEvent`, `requestOpenCalendarAt`: widget Agenda y eventos en el calendario del mes), estado de Wi-Fi y Bluetooth (`getWifiEnabled`, `getBluetoothEnabled`), señal real (`getConnectivity`: barras, Wi-Fi y flechas de datos en la barra Gingerbread), accesos directos de apps (`getAppShortcutsURL`, `requestStartAppShortcut`), selector de archivos para `<input type="file">` (marco de fotos), contactos y llamadas (`getContactsURL`, `requestCallPhoneNumber`: contactos en la búsqueda), descargar sin CORS (`getProxyURL`: cualquier feed en el widget de titulares), batería (`getBattery`: barra de estado, widget y aviso de batería baja) | `getScreenOrientation`, evento `screenOrientationChanged`; `getDefaultAppPackageName` para `sms`, `email` y `camera` (idea 44); la última vez que se usó cada app, en `getAppUsageURL` (idea 42) |
 
 Los **packs de iconos** (`getIconPacksURL`, `getAppIconURL`…) aparecen en la API como borrador, comentados: todavía no existen en Bridge.
 
@@ -388,6 +388,30 @@ Poder abrir las apps del perfil de trabajo (por ejemplo, el Teams laboral). Hoy 
 - **Cajón:** sección "Trabajo" debajo de las apps personales; en gris mientras las apps de trabajo están en pausa (al tocar una, Android pregunta si activarlas). Pausar/reanudar desde el launcher quedó fuera.
 - Si una app de trabajo desaparece, su icono en el escritorio se oculta en vez de borrarse (el perfil puede volver); soltar una app de trabajo del cajón en la papelera abre su información en vez de desinstalarla; el menú de accesos directos solo aparece en las apps personales.
 - **Esfuerzo:** medio en los dos.
+
+
+## Más ideas de Gingerbread (28/09/2026)
+
+### 52. Iconos de Android 2.3 para las apps del sistema ✅ Hecho
+Teléfono, Contactos, Mensajes, Navegador, Cámara, Galería, Música, Reloj, Calculadora, Calendario, Correo, Ajustes, Descargas y Grabadora muestran su icono de 2.3 en vez del actual, en el escritorio, el cajón, las carpetas, la búsqueda y el panel de notificaciones.
+- Los iconos son los `drawable-hdpi` de AOSP android-2.3.7_r1 (Apache 2.0, `src/assets/icons/gingerbread/NOTICE`). Los de las apps de Google de la época (Gmail, Maps, Market) no eran libres y no están.
+- `utils/gingerbreadIcons.ts` (con tests) asigna cada icono a las versiones AOSP, Google y Samsung de la app; `useAppsStore.iconURL()` lo aplica. Las apps de trabajo conservan su icono con el maletín.
+- Se desactiva en Apariencia → "Iconos de las apps del sistema" (`settings.gingerbreadIcons`).
+- **API:** ninguna.
+
+### 53. Apagado "de televisor viejo" al bloquear ✅ Hecho
+Gingerbread estrenó la animación de apagar la pantalla como un televisor de tubo: la imagen se aclara mientras se aplasta en una línea blanca, y la línea se encoge hasta desaparecer.
+- `useTogglesStore.lockScreen()` activa `screenTurningOff`, `App.vue` anima `.launcher-root` (y pone negro el fondo de la página, que tapa el fondo del sistema) y, al terminar (`SCREEN_OFF_ANIMATION_MS`), bloquea con `requestLockScreen`. La animación se deshace poco después, con la pantalla ya apagada.
+- Se ve al bloquear desde el Control de energía; la idea 8 (doble toque) la aprovecharía.
+- **API:** `requestLockScreen()`, como antes.
+
+### 54. Bajar el panel de notificaciones con el dedo ✅ Hecho
+Deslizar hacia abajo en el escritorio (o sobre la barra Gingerbread) baja nuestro panel siguiendo el dedo, como la cortina de 2.3; al soltar se abre o vuelve arriba según cuánto se ve y la velocidad. Arrastrar el asa de abajo hacia arriba lo cierra de la misma forma.
+- **El borde de arriba sigue siendo de Android:** un deslizamiento que empieza en el borde mismo de la pantalla abre la barra del sistema, y ninguna app puede evitarlo. El gesto del launcher empieza por debajo.
+- No empieza sobre listas que se desplazan (agenda, titulares, mensajes), con algo abierto ni mientras se arrastra un icono.
+- `composables/useShadePull.ts`; la decisión (dirección y abrir o cerrar al soltar) está en `utils/shadeGesture.ts`, con tests. El estado del arrastre está en `useMenuStore.notificationPull`.
+- **Con el Bridge original** no hay panel propio: el mismo gesto abre el de Android (`requestExpandNotificationShade`).
+- **API:** ninguna nueva.
 
 ---
 

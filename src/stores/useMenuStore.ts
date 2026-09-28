@@ -17,6 +17,10 @@ export const useMenuStore = defineStore('menu', () =>
     const openFolderId = ref<string | null>(null);
     const isSearchOpen = ref(false);
     const isNotificationPanelOpen = ref(false);
+    // while a finger pulls the notification panel (useShadePull): how many px of it show, and
+    // whether the finger is still down (it follows the finger) or it's settling (it animates)
+    const notificationPull = ref<number | null>(null);
+    const notificationPullDragging = ref(false);
 
     // the cell that was long-pressed to open the menu; "Añadir" places new items there if it can
     const addAnchor = ref<AddAnchor | null>(null);
@@ -90,6 +94,8 @@ export const useMenuStore = defineStore('menu', () =>
         openFolderId,
         isSearchOpen,
         isNotificationPanelOpen,
+        notificationPull,
+        notificationPullDragging,
         addAnchor,
         isAnythingOpen,
         showOptionsMenu,
