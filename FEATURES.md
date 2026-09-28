@@ -422,6 +422,7 @@ Los 25 fondos del selector de 2.3 (Launcher2 de AOSP android-2.3.7_r1, Apache 2.
 
 ### 56. Ordenar el cajón y ocultar apps ✅ Hecho
 - Apariencia → "Cajón de aplicaciones": orden por nombre o con las más usadas primero (las veces que se abrieron desde el launcher), y "Apps ocultas…", una lista con casillas (`menu/HiddenAppsDialog.vue`).
+- **Con nuestro fork**, el menú de pulsación larga de una app en el cajón también ofrece "Ocultar del cajón" (`useAppShortcutsStore.hideFromDrawer()`); un aviso dice dónde volver a mostrarla.
 - Las apps ocultas no salen en el cajón, pero la búsqueda las sigue encontrando. Se guardan por `appKey()` (`settings.hiddenApps`), así que se puede ocultar el Teams de trabajo y dejar el personal.
 - La lógica está en `utils/drawerApps.ts`, con tests.
 - **API:** ninguna.

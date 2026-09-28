@@ -49,7 +49,7 @@ const longPress = useLongPress<{ app: InstalledAppInfo; el: HTMLElement }>(({ ap
     drag.start({ source: 'drawer', ...toAppRef(app), label: app.label }, pos.x, pos.y);
     // shortcuts are only read from the personal profile
     if (!app.isWork)
-        appShortcuts.open(app.packageName, app.label, el.getBoundingClientRect());
+        appShortcuts.open(app.packageName, app.label, el.getBoundingClientRect(), true);
 });
 
 watch(() => drag.hasMoved, moved =>

@@ -24,7 +24,7 @@ const placement = computed(() =>
     const m = menu.value;
     if (!m) return null;
     // shortcuts load after the menu opens; measure when rendered, estimate before
-    const rows = m.shortcuts.length + 1;
+    const rows = m.shortcuts.length + (m.fromDrawer ? 2 : 1);
     const height = menuEl.value?.offsetHeight || TITLE_HEIGHT + rows * ROW_HEIGHT;
     return placeMenu(m.anchor, MENU_WIDTH, height, viewport.width.value, viewport.height.value);
 });
@@ -62,6 +62,15 @@ watch(() => menu.value?.packageName, () => failedIcons.value = new Set());
             <button class="row info" @click="shortcuts.openAppInfo()">
                 <span class="info-icon">i</span>
                 <span class="label">Información de la app</span>
+            </button>
+
+            <button v-if="menu.fromDrawer" class="row" @click="shortcuts.hideFromDrawer()">
+                <svg class="hide-icon" viewBox="0 0 30 30" aria-hidden="true">
+                    <path d="M3 15c3-5 7-8 12-8s9 3 12 8c-3 5-7 8-12 8s-9-3-12-8z" fill="none" stroke="#666" stroke-width="2.2" />
+                    <circle cx="15" cy="15" r="4" fill="#666" />
+                    <path d="M6 25L24 5" stroke="#666" stroke-width="2.2" stroke-linecap="round" />
+                </svg>
+                <span class="label">Ocultar del cajón</span>
             </button>
         </div>
     </template>
@@ -117,7 +126,8 @@ watch(() => menu.value?.packageName, () => failedIcons.value = new Set());
 
         > img,
         > .icon-placeholder,
-        > .info-icon {
+        > .info-icon,
+        > .hide-icon {
             flex-shrink: 0;
             width: 30px;
             height: 30px;

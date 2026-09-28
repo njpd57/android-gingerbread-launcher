@@ -4,7 +4,9 @@ import { useBridgeEventStore } from "./useBridgeEventStore";
 import { useDragStore } from "./useDragStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import type { BridgeAppShortcut, BridgeGetAppShortcutsResponse } from "@/types/bridge-fork";
-import { bridgeRequest } from "@/utils/toast";
+import { bridgeRequest, showToast } from "@/utils/toast";
+import { setAppHidden } from "@/utils/drawerApps";
+import { useSettingsStore } from "./useSettingsStore";
 
 export interface AppShortcutsMenu
 {
@@ -13,6 +15,8 @@ export interface AppShortcutsMenu
     /** The long-pressed icon's box, to place the menu next to it. */
     anchor: DOMRect;
     shortcuts: BridgeAppShortcut[];
+    /** Opened from the drawer, so it offers hiding the app from it. */
+    fromDrawer: boolean;
 }
 
 // The menu that long-pressing an app opens, with its shortcuts ("New message", "Navigate home"...)
@@ -22,18 +26,19 @@ export const useAppShortcutsStore = defineStore('appShortcuts', () =>
 {
     const bridgeEvents = useBridgeEventStore();
     const drag = useDragStore();
+    const settings = useSettingsStore();
 
     const isSupported = bridgeHas('getAppShortcutsURL') && Bridge.getCanAccessAppShortcuts();
 
     const menu = ref<AppShortcutsMenu | null>(null);
     let requestId = 0;
 
-    async function open(packageName: string, label: string, anchor: DOMRect)
+    async function open(packageName: string, label: string, anchor: DOMRect, fromDrawer = false)
     {
         if (!isSupported) return;
 
         const id = ++requestId;
-        menu.value = { packageName, label, anchor, shortcuts: [] };
+        menu.value = { packageName, label, anchor, shortcuts: [], fromDrawer };
 
         try
         {
@@ -71,6 +76,16 @@ export const useAppShortcutsStore = defineStore('appShortcuts', () =>
         close();
     }
 
+    // the menu only opens for personal apps, whose appKey() is the package name
+    function hideFromDrawer()
+    {
+        const m = menu.value;
+        if (!m) return;
+        settings.hiddenApps = setAppHidden(settings.hiddenApps, m.packageName, true);
+        showToast(`${m.label} ya no aparece en el cajón. Puedes volver a mostrarla en Apariencia → Apps ocultas.`);
+        close();
+    }
+
     // dragging the app instead
     watch(() => drag.hasMoved, moved =>
     {
@@ -90,5 +105,6 @@ export const useAppShortcutsStore = defineStore('appShortcuts', () =>
         close,
         start,
         openAppInfo,
+        hideFromDrawer,
     };
 });
