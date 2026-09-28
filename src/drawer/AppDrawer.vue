@@ -13,6 +13,7 @@ import OverscrollGlow from '@/components/OverscrollGlow.vue';
 import type { InstalledAppInfo } from '@/stores/useAppsStore';
 import HomeIcon from '@/home/icons/HomeIcon.vue';
 import { toAppRef } from '@/utils/appKey';
+import { drawerApps } from '@/utils/drawerApps';
 
 const apps = useAppsStore();
 const launcher = useAppLauncherStore();
@@ -26,10 +27,9 @@ const gridEl = ref<HTMLElement>();
 const settings = useSettingsStore();
 const glow = useOverscrollGlow(gridEl, 'y', () => settings.gingerbreadOverscroll);
 
+// in the chosen order, without the apps hidden in Appearance
 const sortedApps = computed(() =>
-    Array.from(apps.apps.values())
-        .sort((a, b) => a.label.localeCompare(b.label))
-);
+    drawerApps(apps.apps.values(), settings.drawerSort, settings.hiddenApps, launcher.launchCounts));
 
 // work profile apps (Bridge fork) go in their own "Trabajo" section, below the personal ones
 const personalApps = computed(() => sortedApps.value.filter(a => !a.isWork));

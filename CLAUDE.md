@@ -68,7 +68,7 @@ Development happens on the **`dev`** branch (`main` gets PRs from `dev`). Keep `
 ## Architecture
 
 `App.vue` stacks absolutely positioned layers, bottom to top:
-1. The live wallpaper (a canvas: Nexus, Grass, Galaxy, Magic Smoke or Polar Clock, mapped in `wallpaper/liveWallpapers.ts`; those that react to taps expose `tap(x, y)`), or nothing when the system wallpaper is selected. They share `wallpaper/useLiveWallpaper.ts`: sizing, parallax (a world 1.5 screens wide), the frame loop at `settings.nexusFps` and pausing.
+1. The live wallpaper (a canvas: Nexus, Grass, Galaxy, Magic Smoke or Polar Clock, mapped in `wallpaper/liveWallpapers.ts`; those that react to taps expose `tap(x, y)`), one of 2.3's still images (`wallpaper/ImageWallpaper.vue`, `settings.imageWallpaper`, list in `utils/gingerbreadWallpapers.ts`), or nothing when the system wallpaper is selected. They share `wallpaper/useLiveWallpaper.ts`: sizing, parallax (a world 1.5 screens wide), the frame loop at `settings.nexusFps` and pausing.
 2. `Workspace`: `PAGE_COUNT` (5) horizontally scroll-snapped pages, starting on `DEFAULT_PAGE` (2), each rendering a `HomeGrid`.
 3. `Dock`.
 4. `AppDrawer`.
@@ -101,6 +101,7 @@ Widgets live in `src/widgets/<name>/`; `widgets/WidgetView.vue` maps each `Widge
 - **System app icons:** `useAppsStore.iconURL()` swaps in Android 2.3's own icons (`src/assets/icons/gingerbread/`, AOSP, mapped by package name in `utils/gingerbreadIcons.ts`) unless `settings.gingerbreadIcons` is off; work apps keep theirs. Always get app icons through `apps.iconURL()`.
 - **Screen off:** `useTogglesStore.lockScreen()` plays Gingerbread's CRT screen-off animation (`screenTurningOff`, drawn in `App.vue`) before `requestLockScreen`.
 - **Pulling the notification panel:** `composables/useShadePull.ts` (decisions in `utils/shadeGesture.ts`) lets a downward swipe on the workspace or our status bar pull the panel with the finger, and its handle push it back; the pull lives in `useMenuStore.notificationPull`. Android's own top-edge swipe can't be intercepted.
+- **Drawer order and hidden apps:** `utils/drawerApps.ts` (`settings.drawerSort`, `settings.hiddenApps` by `appKey()`); hidden apps only leave the drawer, search still finds them.
 - **Long press is the `useLongPress` composable.** One instance can serve a whole `v-for`. Click handlers must call `consumeLongPress()`, so the click that ends a long press is ignored.
 - **`useMenuStore` is the single source of truth for overlays**: the options menu, the open dialog (`LauncherDialog`), the open folder and the search panel.
   - Long-pressing empty workspace opens the options menu. It records the pressed cell as `addAnchor`, which "Añadir" uses to place new items.

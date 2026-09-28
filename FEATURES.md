@@ -413,6 +413,19 @@ Deslizar hacia abajo en el escritorio (o sobre la barra Gingerbread) baja nuestr
 - **Con el Bridge original** no hay panel propio: el mismo gesto abre el de Android (`requestExpandNotificationShade`).
 - **API:** ninguna nueva.
 
+### 55. Fondos estáticos de Android 2.3 ✅ Hecho
+Los 25 fondos del selector de 2.3 (Launcher2 de AOSP android-2.3.7_r1, Apache 2.0, `src/assets/wallpapers/NOTICE`), en su orden original: Electric, Grass, Canyon, Monument Valley, Golden Gate, Nexus Rain y los demás.
+- En "Fondo de pantalla", la opción "Imagen de Gingerbread" muestra la cuadrícula de miniaturas; la elegida se guarda en `settings.imageWallpaper`.
+- Como en 2.3, la imagen ocupa el alto de la pantalla y se desplaza a lo ancho con las páginas (`wallpaper/ImageWallpaper.vue`, medidas en `wallpaperImageLayout()` de `utils/gingerbreadWallpapers.ts`, con tests).
+- Son del launcher, no del sistema: la API no puede poner una imagen como fondo de Android.
+- **API:** ninguna.
+
+### 56. Ordenar el cajón y ocultar apps ✅ Hecho
+- Apariencia → "Cajón de aplicaciones": orden por nombre o con las más usadas primero (las veces que se abrieron desde el launcher), y "Apps ocultas…", una lista con casillas (`menu/HiddenAppsDialog.vue`).
+- Las apps ocultas no salen en el cajón, pero la búsqueda las sigue encontrando. Se guardan por `appKey()` (`settings.hiddenApps`), así que se puede ocultar el Teams de trabajo y dejar el personal.
+- La lógica está en `utils/drawerApps.ts`, con tests.
+- **API:** ninguna.
+
 ---
 
 ## Fallos de Bridge

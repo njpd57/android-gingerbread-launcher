@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useMenuStore } from '@/stores/useMenuStore';
+import { useAppsStore } from '@/stores/useAppsStore';
 import { MAX_GRID_ROWS, MIN_GRID_ROWS, useHomeLayoutStore } from '@/stores/useHomeLayoutStore';
 import { MAX_ICON_SCALE, MIN_ICON_SCALE } from '@/utils/iconSize';
 import { MAX_STATUS_BAR_HEIGHT, MAX_STATUS_BAR_SIDE_MARGIN, STATUS_BAR_ICONS, useSettingsStore, type StatusBarBackground, type StatusBarIcon } from '@/stores/useSettingsStore';
@@ -12,8 +13,10 @@ import GbDialog from '@/components/GbDialog.vue';
 import GbButton from '@/components/GbButton.vue';
 import GbRadioRow from '@/components/GbRadioRow.vue';
 import GbCheckRow from '@/components/GbCheckRow.vue';
+import type { DrawerSort } from '@/utils/drawerApps';
 
 const menu = useMenuStore();
+const apps = useAppsStore();
 const layout = useHomeLayoutStore();
 const settings = useSettingsStore();
 const insets = useWindowInsetsStore();
@@ -33,6 +36,11 @@ const addIconOptions: { value: boolean; label: string }[] = [
 const appIconOptions: { value: boolean; label: string }[] = [
     { value: true, label: 'De Android 2.3' },
     { value: false, label: 'Los de cada app' },
+];
+
+const drawerSortOptions: { value: DrawerSort; label: string }[] = [
+    { value: 'name', label: 'Por nombre' },
+    { value: 'mostUsed', label: 'Más usadas primero' },
 ];
 
 const overscrollOptions: { value: boolean; label: string }[] = [
@@ -69,6 +77,9 @@ function setStatusBarIcon(icon: StatusBarIcon, visible: boolean)
 {
     settings.statusBarIcons = { ...settings.statusBarIcons, [icon]: visible };
 }
+
+// only apps still installed count
+const hiddenCount = computed(() => settings.hiddenApps.filter(key => apps.apps.has(key)).length);
 
 const isHeightAuto = computed(() => settings.statusBarHeight < 0);
 
@@ -283,6 +294,35 @@ const rowOptions = [0, ...Array.from({ length: MAX_GRID_ROWS - MIN_GRID_ROWS + 1
                 como hacía el Market.
             </div>
         </section>
+
+        <div class="section-title">Cajón de aplicaciones</div>
+
+        <section class="options">
+            <div class="field-label">Orden</div>
+            <div class="segmented">
+                <button
+                    v-for="opt in drawerSortOptions"
+                    :key="opt.value"
+                    :class="{ selected: settings.drawerSort === opt.value }"
+                    @click="settings.drawerSort = opt.value">
+                    {{ opt.label }}
+                </button>
+            </div>
+            <div class="field-hint">
+                «Más usadas primero» cuenta las veces que abriste cada app desde el launcher.
+            </div>
+        </section>
+
+        <section class="options">
+            <GbButton @click="menu.showDialog('hiddenApps')">
+                Apps ocultas{{ hiddenCount > 0 ? ` (${hiddenCount})` : '' }}…
+            </GbButton>
+            <div class="field-hint">
+                Elige qué apps no aparecen en el cajón. La búsqueda las sigue encontrando.
+            </div>
+        </section>
+
+        <div class="section-title">General</div>
 
         <section class="options">
             <div class="field-label">Al llegar al final de una lista</div>

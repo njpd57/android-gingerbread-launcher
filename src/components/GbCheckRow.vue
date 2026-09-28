@@ -3,6 +3,8 @@ defineProps<{
     modelValue: boolean;
     label: string;
     hint?: string;
+    /** An app icon at the start of the row. */
+    icon?: string;
 }>();
 
 const emit = defineEmits<{
@@ -12,6 +14,7 @@ const emit = defineEmits<{
 
 <template>
     <label class="gb-check-row">
+        <img v-if="icon" class="icon" :src="icon" alt="" loading="lazy" draggable="false" />
         <span class="text">
             <span class="label">{{ label }}</span>
             <span v-if="hint" class="hint">{{ hint }}</span>
@@ -37,6 +40,12 @@ const emit = defineEmits<{
     &:active {
         background: linear-gradient(to bottom, #ffc64d, #ff8a00);
         color: #111;
+    }
+
+    > .icon {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
     }
 
     > .text {

@@ -23,6 +23,7 @@ import WallpaperDialog from './menu/WallpaperDialog.vue';
 import AddDialog from './menu/AddDialog.vue';
 import AppearanceDialog from './menu/AppearanceDialog.vue';
 import ManageAppsDialog from './menu/ManageAppsDialog.vue';
+import HiddenAppsDialog from './menu/HiddenAppsDialog.vue';
 import AboutDialog from './menu/AboutDialog.vue';
 import LowBatteryDialog from './menu/LowBatteryDialog.vue';
 import VolumeDialog from './menu/VolumeDialog.vue';
@@ -165,6 +166,7 @@ function onWorkspaceClick(e: MouseEvent)
         <WallpaperDialog />
         <AppearanceDialog />
         <ManageAppsDialog />
+        <HiddenAppsDialog />
         <AboutDialog />
         <LowBatteryDialog />
         <VolumeDialog />

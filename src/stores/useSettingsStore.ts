@@ -7,6 +7,7 @@ import { useBridgeEventStore } from "./useBridgeEventStore";
 import { useHomeLayoutStore } from "./useHomeLayoutStore";
 import { DEFAULT_PAGE, PAGE_COUNT, useWorkspaceStore } from "./useWorkspaceStore";
 import { showToast } from "@/utils/toast";
+import type { DrawerSort } from "@/utils/drawerApps";
 
 /** A live wallpaper drawn by the launcher (src/wallpaper/), or Android's own wallpaper. */
 export type LiveWallpaperKind = 'nexus' | 'grass' | 'galaxy' | 'magicSmoke' | 'polarClock';
@@ -63,6 +64,9 @@ export const useSettingsStore = defineStore('settings', () =>
     const addIconOnInstall = useLocalStorage<boolean>('settings.addIconOnInstall', true);
     // app icon size, in percent of Gingerbread's 48 px (utils/iconSize.ts)
     const iconScale = useLocalStorage<number>('settings.iconScale', 100);
+    // the drawer's order, and the apps it leaves out (by appKey(); search still finds them)
+    const drawerSort = useLocalStorage<DrawerSort>('settings.drawerSort', 'name');
+    const hiddenApps = useLocalStorage<string[]>('settings.hiddenApps', []);
     // Android 2.3's icons for the system apps (phone, messages, camera…) instead of their own
     const gingerbreadIcons = useLocalStorage<boolean>('settings.gingerbreadIcons', true);
 
@@ -156,5 +160,7 @@ export const useSettingsStore = defineStore('settings', () =>
         addIconOnInstall,
         iconScale,
         gingerbreadIcons,
+        drawerSort,
+        hiddenApps,
     };
 });
