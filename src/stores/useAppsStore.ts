@@ -7,6 +7,8 @@ import { useBridgeEventStore } from "./useBridgeEventStore";
 import type { BridgeGetAppsResponse, BridgeInstalledAppInfo } from "@bridgelauncher/api";
 import type { BridgeGetProfileAppsResponse, BridgeProfileApp } from "@/types/bridge-fork";
 import { bridgeRequest } from "@/utils/toast";
+import { gingerbreadIconFor, gingerbreadIconURL } from "@/utils/gingerbreadIcons";
+import { useSettingsStore } from "./useSettingsStore";
 
 export interface InstalledAppInfo extends BridgeInstalledAppInfo, AppRef
 {
@@ -29,6 +31,7 @@ export enum RequestStatus
 export const useAppsStore = defineStore('apps', () =>
 {
     const bridgeEvents = useBridgeEventStore();
+    const settings = useSettingsStore();
 
     // Bridge fork: the apps of every profile, so work apps (e.g. work Teams) show up too
     const hasProfiles = bridgeHas('getProfileAppsURL');
@@ -126,12 +129,19 @@ export const useAppsStore = defineStore('apps', () =>
         return apps.value.has(appKey(app));
     }
 
-    /** The app's icon; work apps get it with the work briefcase. */
+    /**
+     * The app's icon; work apps get it with the work briefcase, and keep it (no 2.3 icon) so
+     * they stay told apart from the personal copy.
+     */
     function iconURL(app: AppRef)
     {
-        return app.userSerial == null
-            ? Bridge.getDefaultAppIconURL(app.packageName)
-            : Bridge.getProfileAppIconURL(app.packageName, app.userSerial);
+        if (app.userSerial != null)
+            return Bridge.getProfileAppIconURL(app.packageName, app.userSerial);
+
+        const gingerbread = settings.gingerbreadIcons ? gingerbreadIconFor(app.packageName) : null;
+        return gingerbread
+            ? gingerbreadIconURL(gingerbread)
+            : Bridge.getDefaultAppIconURL(app.packageName);
     }
 
     function openAppInfo(app: AppRef)

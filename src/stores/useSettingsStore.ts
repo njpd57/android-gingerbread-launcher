@@ -60,6 +60,8 @@ export const useSettingsStore = defineStore('settings', () =>
     const addIconOnInstall = useLocalStorage<boolean>('settings.addIconOnInstall', true);
     // app icon size, in percent of Gingerbread's 48 px (utils/iconSize.ts)
     const iconScale = useLocalStorage<number>('settings.iconScale', 100);
+    // Android 2.3's icons for the system apps (phone, messages, camera…) instead of their own
+    const gingerbreadIcons = useLocalStorage<boolean>('settings.gingerbreadIcons', true);
 
     // Bridge only needs to draw the system wallpaper when a live wallpaper canvas isn't covering it
     watch(wallpaper, kind =>
@@ -149,5 +151,6 @@ export const useSettingsStore = defineStore('settings', () =>
         gingerbreadOverscroll,
         addIconOnInstall,
         iconScale,
+        gingerbreadIcons,
     };
 });

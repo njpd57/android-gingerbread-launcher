@@ -30,6 +30,11 @@ const addIconOptions: { value: boolean; label: string }[] = [
     { value: false, label: 'No añadir' },
 ];
 
+const appIconOptions: { value: boolean; label: string }[] = [
+    { value: true, label: 'De Android 2.3' },
+    { value: false, label: 'Los de cada app' },
+];
+
 const overscrollOptions: { value: boolean; label: string }[] = [
     { value: true, label: 'Brillo naranja' },
     { value: false, label: 'Efecto de Android' },
@@ -242,6 +247,23 @@ const rowOptions = [0, ...Array.from({ length: MAX_GRID_ROWS - MIN_GRID_ROWS + 1
             <div class="field-hint">
                 Cambia los iconos del escritorio, las carpetas y el cajón de aplicaciones. En el escritorio
                 nunca crecen más de lo que cabe en su celda, así que con muchas filas pueden quedar más chicos.
+            </div>
+        </section>
+
+        <section class="options">
+            <div class="field-label">Iconos de las apps del sistema</div>
+            <div class="segmented">
+                <button
+                    v-for="opt in appIconOptions"
+                    :key="opt.label"
+                    :class="{ selected: settings.gingerbreadIcons === opt.value }"
+                    @click="settings.gingerbreadIcons = opt.value">
+                    {{ opt.label }}
+                </button>
+            </div>
+            <div class="field-hint">
+                Teléfono, Contactos, Mensajes, Navegador, Cámara, Galería, Música, Reloj, Calculadora,
+                Calendario, Correo, Ajustes, Descargas y Grabadora usan los iconos originales de Gingerbread.
             </div>
         </section>
 

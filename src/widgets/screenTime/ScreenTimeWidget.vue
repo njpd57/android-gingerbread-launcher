@@ -60,7 +60,7 @@ function onClick()
 
             <div v-else class="apps">
                 <div v-for="u in top" :key="u.packageName" class="app">
-                    <img :src="Bridge.getDefaultAppIconURL(u.packageName)" alt="" draggable="false" />
+                    <img :src="apps.iconURL({ packageName: u.packageName })" alt="" draggable="false" />
                     <span class="time">{{ formatDuration(u.totalTimeMs) }}</span>
                 </div>
                 <span v-if="top.length === 0" class="empty">Todavía no usaste apps hoy.</span>
