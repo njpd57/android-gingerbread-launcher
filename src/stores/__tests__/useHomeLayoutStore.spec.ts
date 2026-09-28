@@ -120,13 +120,22 @@ describe('useHomeLayoutStore', () =>
 
         layout.addToFolder(id, { packageName: 'com.android.chrome', label: 'Chrome' });
         layout.addToFolder(id, { packageName: 'com.android.chrome', label: 'Chrome' });
-        layout.removeFromFolder(id, 'com.android.chrome');
+        layout.removeFromFolder(id, { packageName: 'com.android.chrome' });
         expect(layout.folderAt(0, 0, 0)?.apps).toHaveLength(1);
 
         layout.renameFolder(id, '  Juegos ');
         expect(layout.folderAt(0, 0, 0)?.name).toBe('Juegos');
         layout.renameFolder(id, '   ');
         expect(layout.folderAt(0, 0, 0)?.name).toBe('Carpeta');
+    });
+
+    it('creates contact folders with their own name', () =>
+    {
+        const layout = useHomeLayoutStore();
+        layout.addFolder(0, 1, 0, 'starredContacts');
+        expect(layout.folderAt(0, 1, 0)).toMatchObject({ name: 'Contactos destacados', source: 'starredContacts', apps: [] });
+        layout.addFolder(0, 2, 0);
+        expect(layout.folderAt(0, 2, 0)).not.toHaveProperty('source');
     });
 
     it('removes shortcuts and folder entries when their app is uninstalled', () =>
@@ -144,5 +153,25 @@ describe('useHomeLayoutStore', () =>
         expect(layout.items.filter(i => i.type === 'app').map(i => i.type === 'app' && i.packageName))
             .toEqual(['com.google.android.gm']);
         expect(layout.folderAt(0, 2, 0)?.apps).toEqual([]);
+    });
+
+    it('keeps work profile copies when the personal app is uninstalled', () =>
+    {
+        const layout = useHomeLayoutStore();
+        useBridgeEventStore();
+        layout.addApp('com.microsoft.teams', 'Teams', 0, 0, 0);
+        layout.addApp('com.microsoft.teams', 'Teams', 0, 1, 0, 10);
+
+        const folderId = layout.addFolder(0, 2, 0);
+        layout.addToFolder(folderId, { packageName: 'com.microsoft.teams', userSerial: 10, label: 'Teams' });
+        layout.addToFolder(folderId, { packageName: 'com.microsoft.teams', label: 'Teams' });
+        layout.removeFromFolder(folderId, { packageName: 'com.microsoft.teams', userSerial: 10 });
+        expect(layout.folderAt(0, 2, 0)?.apps).toEqual([{ packageName: 'com.microsoft.teams', label: 'Teams' }]);
+        layout.addToFolder(folderId, { packageName: 'com.microsoft.teams', userSerial: 10, label: 'Teams' });
+
+        window.onBridgeEvent!({ name: 'appRemoved', packageName: 'com.microsoft.teams' });
+
+        expect(layout.items.filter(i => i.type === 'app').map(i => i.type === 'app' && i.userSerial)).toEqual([10]);
+        expect(layout.folderAt(0, 2, 0)?.apps).toEqual([{ packageName: 'com.microsoft.teams', userSerial: 10, label: 'Teams' }]);
     });
 });

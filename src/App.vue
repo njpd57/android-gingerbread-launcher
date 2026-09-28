@@ -23,10 +23,13 @@ import ManageAppsDialog from './menu/ManageAppsDialog.vue';
 import AboutDialog from './menu/AboutDialog.vue';
 import LowBatteryDialog from './menu/LowBatteryDialog.vue';
 import VolumeDialog from './menu/VolumeDialog.vue';
+import RecentAppsDialog from './menu/RecentAppsDialog.vue';
+import ScreenPreview from './home/ScreenPreview.vue';
 import SearchPanel from './widgets/search/SearchPanel.vue';
 import FolderPanel from './home/FolderPanel.vue';
 import GingerbreadStatusBar from './statusbar/GingerbreadStatusBar.vue';
 import NotificationPanel from './notifications/NotificationPanel.vue';
+import GbToast from './components/GbToast.vue';
 
 
 const insets = useWindowInsetsStore();
@@ -145,6 +148,8 @@ function onWorkspaceClick(e: MouseEvent)
         <AboutDialog />
         <LowBatteryDialog />
         <VolumeDialog />
+        <RecentAppsDialog />
+        <ScreenPreview />
 
         <SearchPanel />
 
@@ -164,6 +169,8 @@ function onWorkspaceClick(e: MouseEvent)
             class="status-bar-bg"
             :class="settings.statusBarBackground"
             :style="{ 'height': 'var(--status-bar-height)' }"></div>
+
+        <GbToast />
 
     </div>
 </template>

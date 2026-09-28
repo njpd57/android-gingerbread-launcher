@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatNotificationTime, notificationPanelSections, statusBarNotifications } from '../notifications';
+import { formatNotificationTime, messageNotifications, notificationPanelSections, statusBarNotifications } from '../notifications';
 import type { BridgeNotification } from '@/types/bridge-fork';
 
 function notification(key: string, packageName: string, postTime: number, extra: Partial<BridgeNotification> = {}): BridgeNotification
@@ -11,6 +11,26 @@ function notification(key: string, packageName: string, postTime: number, extra:
         ...extra,
     };
 }
+
+describe('messageNotifications', () =>
+{
+    it('keeps the messaging app’s conversations, newest first', () =>
+    {
+        const result = messageNotifications([
+            notification('m1', 'com.sms', 100),
+            notification('other', 'com.whatsapp', 400),
+            notification('summary', 'com.sms', 500, { isGroupSummary: true }),
+            notification('sending', 'com.sms', 600, { isOngoing: true }),
+            notification('m2', 'com.sms', 300),
+        ], 'com.sms');
+        expect(result.map(n => n.key)).toEqual(['m2', 'm1']);
+    });
+
+    it('is empty without a messaging app', () =>
+    {
+        expect(messageNotifications([notification('m1', 'com.sms', 100)], null)).toEqual([]);
+    });
+});
 
 describe('statusBarNotifications', () =>
 {

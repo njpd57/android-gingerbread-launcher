@@ -344,6 +344,41 @@ class ForkBridgeMock extends BridgeMock
         return JSON.stringify({ level: 72, isCharging: false, pluggedType: null });
     }
 
+    // the browser can download, so the mock does that instead of Android's "Save as" dialog
+    requestSaveFile(fileName: string, content: string, mimeType = 'application/json')
+    {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([content], { type: mimeType }));
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        setTimeout(() => this.emit({ name: 'fileSaved', newValue: { fileName, result: 'saved' } }), 300);
+        return true;
+    }
+
+    // public/mock/profile-apps.json: the mock apps plus a couple of them in a work profile
+    getProfileAppsURL()
+    {
+        return '/mock/profile-apps.json';
+    }
+
+    getProfileAppIconURL(packageName: string)
+    {
+        return this.getDefaultAppIconURL(packageName);
+    }
+
+    requestLaunchProfileApp(packageName: string, userSerial: number)
+    {
+        alert(`Would launch ${packageName} in profile ${userSerial}.`);
+        return true;
+    }
+
+    requestOpenProfileAppInfo(packageName: string, userSerial: number)
+    {
+        alert(`Would open the app info of ${packageName} in profile ${userSerial}.`);
+        return true;
+    }
+
     getNextAlarm()
     {
         // tomorrow at 7:00

@@ -15,6 +15,7 @@ import OverscrollGlow from '@/components/OverscrollGlow.vue';
 import GbDialog from '@/components/GbDialog.vue';
 import SearchGlyph from './SearchGlyph.vue';
 import ContactGlyph from './ContactGlyph.vue';
+import { bridgeRequest } from '@/utils/toast';
 
 // Full-screen app search, styled after Gingerbread's Quick Search Box: the search bar at the top
 // with the keyboard up, and a white list of results that filters as you type. Below the apps, a
@@ -88,7 +89,7 @@ function messageNumber(number: string)
 {
     menuFor.value = null;
     menu.closeAll();
-    Bridge.requestOpenUrl(`smsto:${number}`);
+    bridgeRequest(t => Bridge.requestOpenUrl(`smsto:${number}`, t));
 }
 
 function viewContact(c: BridgeContact)
@@ -127,13 +128,13 @@ watch(() => menu.isSearchOpen, async open =>
 function launch(app: InstalledAppInfo)
 {
     menu.closeAll();
-    launcher.launch(app.packageName);
+    launcher.launch(app);
 }
 
 function searchWeb()
 {
     const url = `https://www.google.com/search?q=${encodeURIComponent(query.value.trim())}`;
-    if (Bridge.requestOpenUrl(url))
+    if (bridgeRequest(t => Bridge.requestOpenUrl(url, t)))
         menu.closeAll();
 }
 
@@ -184,10 +185,10 @@ function clear()
 
                     <button
                         v-for="app in shownApps"
-                        :key="app.packageName"
+                        :key="app.key"
                         class="row"
                         @click="launch(app)">
-                        <img :src="Bridge.getDefaultAppIconURL(app.packageName)" alt="" draggable="false" />
+                        <img :src="apps.iconURL(app)" alt="" draggable="false" />
                         <span class="label">{{ app.label }}</span>
                     </button>
 

@@ -39,6 +39,32 @@ export type BridgePluggedType = 'ac' | 'usb' | 'wireless' | 'other';
 
 export type BridgeRingerMode = 'normal' | 'vibrate' | 'silent';
 
+/** The outcome of `requestSaveFile`, in the `fileSaved` event. */
+export interface BridgeFileSaveResult
+{
+    fileName: string;
+    /** `'cancelled'`: the user closed Android's "Save as" dialog. */
+    result: 'saved' | 'cancelled' | 'failed';
+}
+
+/** An app in any profile of the device, from `getProfileAppsURL()`. */
+export interface BridgeProfileApp
+{
+    packageName: string;
+    label: string;
+    /** Identifies the profile (stable across reboots); pass it to the `…ProfileApp…` methods. */
+    userSerial: number;
+    /** `'personal'` for Bridge's own profile, `'work'` for the work profile. */
+    profile: 'personal' | 'work';
+    /** Whether the profile is paused (work apps turned off). */
+    isPaused: boolean;
+}
+
+export interface BridgeGetProfileAppsResponse
+{
+    apps: BridgeProfileApp[];
+}
+
 /** The next alarm clock set on the device, from `getNextAlarm()` and `nextAlarmChanged`. */
 export interface BridgeNextAlarm
 {
@@ -229,7 +255,10 @@ export type BridgeForkEvent =
     | { name: 'canReadUsageStatsChanged'; newValue: boolean }
     | { name: 'canReadContactsChanged'; newValue: boolean }
     | { name: 'canCallPhoneChanged'; newValue: boolean }
-    | { name: 'contactsChanged' };
+    | { name: 'contactsChanged' }
+    /** The apps of some profile changed (or a profile was paused/resumed): fetch `getProfileAppsURL()` again. */
+    | { name: 'profileAppsChanged' }
+    | { name: 'fileSaved'; newValue: BridgeFileSaveResult };
 
 declare module '@bridgelauncher/api'
 {
@@ -339,6 +368,20 @@ declare module '@bridgelauncher/api'
         getAppShortcutsURL(packageName: string): string;
         getAppShortcutIconURL(packageName: string, shortcutId: string): string;
         requestStartAppShortcut(packageName: string, shortcutId: string, showToastIfFailed?: boolean): boolean;
+
+        /**
+         * Asks where to save `content` with Android's "Save as" dialog (suggesting `fileName`) and writes it
+         * there. Returns whether the dialog opened; the outcome arrives as the `fileSaved` event.
+         */
+        requestSaveFile(fileName: string, content: string, mimeType?: string, showToastIfFailed?: boolean): boolean;
+
+        /** A {@link BridgeGetProfileAppsResponse}: the apps of every profile, personal included. Fires `profileAppsChanged`. */
+        getProfileAppsURL(): string;
+        /** The app's icon in its profile, with the profile's badge (the work briefcase). */
+        getProfileAppIconURL(packageName: string, userSerial: number): string;
+        /** Opens the app in its profile. If work apps are paused, Android asks to turn them on. */
+        requestLaunchProfileApp(packageName: string, userSerial: number, showToastIfFailed?: boolean): boolean;
+        requestOpenProfileAppInfo(packageName: string, userSerial: number, showToastIfFailed?: boolean): boolean;
 
         /** A {@link BridgeConnectivity} as JSON. Fires `connectivityChanged`. */
         getConnectivity(): string;

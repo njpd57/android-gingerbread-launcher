@@ -1,15 +1,20 @@
 <script setup lang="ts">
+import { useAppsStore } from '@/stores/useAppsStore';
+
 // An icon with its label, as shown on the home screen and in folders.
-// Pass `packageName` for an app icon, or put a custom icon in the default slot.
+// Pass `packageName` (and `userSerial` for a work app) for an app icon, or put a custom icon in the default slot.
 defineProps<{
     label: string;
     packageName?: string;
+    userSerial?: number;
 }>();
+
+const apps = useAppsStore();
 </script>
 
 <template>
     <div class="shortcut">
-        <img v-if="packageName" :src="Bridge.getDefaultAppIconURL(packageName)" alt="" draggable="false" />
+        <img v-if="packageName" :src="apps.iconURL({ packageName, userSerial })" alt="" draggable="false" />
         <slot v-else></slot>
         <span class="label">{{ label }}</span>
     </div>

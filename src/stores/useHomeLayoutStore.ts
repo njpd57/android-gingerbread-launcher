@@ -3,6 +3,7 @@ import { computed, watch } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { DEFAULT_PAGE, PAGE_COUNT } from "./useWorkspaceStore";
+import { isSameApp, type AppRef } from "@/utils/appKey";
 
 export const GRID_COLS = 4;
 export const MIN_GRID_ROWS = 4;
@@ -21,7 +22,8 @@ export function autoGridRows(gridWidth: number, gridHeight: number)
 }
 
 export type WidgetKind = 'clock' | 'clockLarge' | 'digitalClock' | 'weather' | 'power' | 'search' | 'battery' | 'calendar' | 'quote' | 'photo' | 'music' | 'musicSongbird' | 'agenda' | 'screenTime' | 'mostUsed'
-    | 'countdown' | 'forecast' | 'sunMoon' | 'note' | 'timer' | 'calculator' | 'tasks' | 'rss' | 'favContacts' | 'directCall' | 'directMessage';
+    | 'countdown' | 'forecast' | 'sunMoon' | 'note' | 'timer' | 'calculator' | 'tasks' | 'rss' | 'favContacts' | 'directCall' | 'directMessage'
+    | 'bookmarks' | 'messages';
 
 export const WIDGET_SIZES: Record<WidgetKind, { w: number; h: number }> = {
     clock: { w: 2, h: 2 },
@@ -50,6 +52,8 @@ export const WIDGET_SIZES: Record<WidgetKind, { w: number; h: number }> = {
     favContacts: { w: 4, h: 1 },
     directCall: { w: 1, h: 1 },
     directMessage: { w: 1, h: 1 },
+    bookmarks: { w: 4, h: 2 },
+    messages: { w: 4, h: 2 },
 };
 
 export interface GridArea
@@ -61,7 +65,8 @@ export interface GridArea
     h: number;
 }
 
-export interface AppItem extends GridArea
+// `userSerial` (from AppRef) is set for work profile apps only
+export interface AppItem extends GridArea, AppRef
 {
     id: string;
     type: 'app';
@@ -77,11 +82,17 @@ export interface WidgetItem extends GridArea
     widget: WidgetKind;
 }
 
-export interface FolderApp
+export interface FolderApp extends AppRef
 {
     packageName: string;
     label: string;
 }
+
+/**
+ * Gingerbread's "live" contact folders (idea 43): they list contacts instead of holding apps. Bridge only
+ * serves contacts with a phone number, so 2.3's "all contacts" and "contacts with phone numbers" are one.
+ */
+export type ContactFolderSource = 'allContacts' | 'starredContacts';
 
 export interface FolderItem extends GridArea
 {
@@ -89,11 +100,18 @@ export interface FolderItem extends GridArea
     type: 'folder';
     name: string;
     apps: FolderApp[];
+    /** Set for contact folders; their `apps` stay empty. */
+    source?: ContactFolderSource;
 }
 
 export type HomeItem = AppItem | WidgetItem | FolderItem;
 
 export const DEFAULT_FOLDER_NAME = 'Carpeta';
+
+export const CONTACT_FOLDER_NAMES: Record<ContactFolderSource, string> = {
+    allContacts: 'Contactos',
+    starredContacts: 'Contactos destacados',
+};
 
 function defaultItems(): HomeItem[]
 {
@@ -158,11 +176,15 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
             i.type === 'folder' && i.page === page && i.x === x && i.y === y);
     }
 
-    function addApp(packageName: string, label: string, page: number, x: number, y: number)
+    /** `userSerial` only for a work profile app. */
+    function addApp(packageName: string, label: string, page: number, x: number, y: number, userSerial?: number)
     {
         items.value = [
             ...items.value,
-            { id: newId(), type: 'app', packageName, label, page, x, y, w: 1, h: 1 },
+            {
+                id: newId(), type: 'app', packageName, ...(userSerial == null ? {} : { userSerial }),
+                label, page, x, y, w: 1, h: 1,
+            },
         ];
     }
 
@@ -200,12 +222,14 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
         ];
     }
 
-    function addFolder(page: number, x: number, y: number)
+    /** A folder of apps, or with `source` a contact folder. */
+    function addFolder(page: number, x: number, y: number, source?: ContactFolderSource)
     {
         const id = newId();
+        const name = source ? CONTACT_FOLDER_NAMES[source] : DEFAULT_FOLDER_NAME;
         items.value = [
             ...items.value,
-            { id, type: 'folder', name: DEFAULT_FOLDER_NAME, apps: [], page, x, y, w: 1, h: 1 },
+            { id, type: 'folder', name, apps: [], ...(source ? { source } : {}), page, x, y, w: 1, h: 1 },
         ];
         return id;
     }
@@ -225,12 +249,12 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
         updateFolder(id, f => ({ ...f, apps: [...f.apps, app] }));
     }
 
-    function removeFromFolder(id: string, packageName: string)
+    function removeFromFolder(id: string, app: AppRef)
     {
         // only the first match, in case the same app was added twice
         updateFolder(id, f =>
         {
-            const index = f.apps.findIndex(a => a.packageName === packageName);
+            const index = f.apps.findIndex(a => isSameApp(a, app));
             return index === -1 ? f : { ...f, apps: f.apps.filter((_, i) => i !== index) };
         });
     }
@@ -274,14 +298,16 @@ export const useHomeLayoutStore = defineStore('homeLayout', () =>
         if (now < before) fitItemsToGrid();
     });
 
-    // uninstalled apps take their shortcuts (and their place in folders) with them
+    // uninstalled apps take their shortcuts (and their place in folders) with them. appRemoved is only
+    // about the personal profile; work apps that disappear are just hidden (the profile may come back)
     bridgeEvents.addEventListener(ev =>
     {
         if (ev.name !== 'appRemoved') return;
+        const removed: AppRef = { packageName: ev.packageName };
         items.value = items.value
-            .filter(i => i.type !== 'app' || i.packageName !== ev.packageName)
+            .filter(i => i.type !== 'app' || !isSameApp(i, removed))
             .map(i => i.type === 'folder'
-                ? { ...i, apps: i.apps.filter(a => a.packageName !== ev.packageName) }
+                ? { ...i, apps: i.apps.filter(a => !isSameApp(a, removed)) }
                 : i);
     });
 

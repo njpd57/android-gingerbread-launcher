@@ -3,6 +3,8 @@ import { ref, toValue, readonly, computed } from "vue";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import type { BridgeButtonVisibility, OverscrollEffects, SystemNightModeOrError, BridgeTheme, SystemBarAppearance } from '@bridgelauncher/api';
+import { bridgeRequest, showToast } from "@/utils/toast";
+import { API_LEVELS, supportsApiLevel } from "@/utils/androidVersion";
 
 export const useTogglesStore = defineStore('toggles', () => 
 {
@@ -16,9 +18,14 @@ export const useTogglesStore = defineStore('toggles', () =>
     const statusBarAppearance = ref(Bridge.getStatusBarAppearance());
     const navigationBarAppearance = ref(Bridge.getNavigationBarAppearance());
 
-    // these can be missing from older Bridge builds even though the API types declare them
-    const supportsLockScreen = bridgeHas('requestLockScreen') && bridgeHas('getCanLockScreen');
-    const supportsNightMode = bridgeHas('requestSetSystemNightMode');
+    // these can be missing from older Bridge builds even though the API types declare them,
+    // and Bridge can only do them from some Android version on
+    const bridgeLocksScreen = bridgeHas('requestLockScreen') && bridgeHas('getCanLockScreen');
+    const bridgeSetsNightMode = bridgeHas('requestSetSystemNightMode');
+    const androidLocksScreen = supportsApiLevel(API_LEVELS.lockScreen);
+    const androidSetsNightMode = supportsApiLevel(API_LEVELS.setNightMode);
+    const supportsLockScreen = bridgeLocksScreen && androidLocksScreen;
+    const supportsNightMode = bridgeSetsNightMode && androidSetsNightMode;
 
     const canLockScreen = ref(false);
     const canRequestSystemNightMode = ref(false);
@@ -41,31 +48,35 @@ export const useTogglesStore = defineStore('toggles', () =>
     {
         if (!supportsLockScreen)
         {
-            Bridge.showToast('Tu versión de Bridge no permite bloquear la pantalla.');
+            showToast(bridgeLocksScreen
+                ? 'Bloquear la pantalla necesita Android 9 o posterior.'
+                : 'Tu versión de Bridge no permite bloquear la pantalla.');
             return false;
         }
         if (!canLockScreen.value)
         {
-            Bridge.showToast('Para bloquear, activa el servicio de accesibilidad de Bridge y permite bloquear la pantalla en sus ajustes.', true);
-            Bridge.requestOpenBridgeSettings(true);
+            showToast('Para bloquear, activa el servicio de accesibilidad de Bridge y permite bloquear la pantalla en sus ajustes.', true);
+            bridgeRequest(t => Bridge.requestOpenBridgeSettings(t));
             return false;
         }
-        return Bridge.requestLockScreen(true);
+        return bridgeRequest(t => Bridge.requestLockScreen(t));
     }
 
     function toggleNightMode()
     {
         if (!supportsNightMode)
         {
-            Bridge.showToast('Tu versión de Bridge no permite cambiar el modo noche.');
+            showToast(bridgeSetsNightMode
+                ? 'Cambiar el modo noche necesita Android 11 o posterior.'
+                : 'Tu versión de Bridge no permite cambiar el modo noche.');
             return;
         }
         if (!canRequestSystemNightMode.value)
         {
-            Bridge.showToast('Bridge necesita el permiso WRITE_SECURE_SETTINGS para cambiar el modo noche (se concede una vez por adb).', true);
+            showToast('Bridge necesita el permiso WRITE_SECURE_SETTINGS para cambiar el modo noche (se concede una vez por adb).', true);
             return;
         }
-        Bridge.requestSetSystemNightMode(systemNightMode.value === 'yes' ? 'no' : 'yes');
+        bridgeRequest(t => Bridge.requestSetSystemNightMode(systemNightMode.value === 'yes' ? 'no' : 'yes', t));
     }
 
     bridgeEvents.addEventListener(ev =>
@@ -95,35 +106,35 @@ export const useTogglesStore = defineStore('toggles', () =>
     return {
         bridgeButtonVisibility: computed({
             get: () => toValue(bridgeButtonVisibility),
-            set: x => Bridge.requestSetBridgeButtonVisibility(x),
+            set: x => bridgeRequest(t => Bridge.requestSetBridgeButtonVisibility(x, t)),
         }),
         drawSystemWallpaperBehindWebView: computed({
             get: () => toValue(drawSystemWallpaperBehindWebView),
-            set: x => Bridge.requestSetDrawSystemWallpaperBehindWebViewEnabled(x),
+            set: x => bridgeRequest(t => Bridge.requestSetDrawSystemWallpaperBehindWebViewEnabled(x, t)),
         }),
         overscrollEffects: computed({
             get: () => toValue(overscrollEffects),
-            set: x => Bridge.requestSetOverscrollEffects(x),
+            set: x => bridgeRequest(t => Bridge.requestSetOverscrollEffects(x, t)),
         }),
         systemNightMode: computed({
             get: () => toValue(systemNightMode),
             set: x =>
             {
                 if (supportsNightMode && x !== 'unknown' && x !== 'error')
-                    Bridge.requestSetSystemNightMode(x);
+                    bridgeRequest(t => Bridge.requestSetSystemNightMode(x, t));
             }
         }),
         bridgeTheme: computed({
             get: () => toValue(bridgeTheme),
-            set: x => Bridge.requestSetBridgeTheme(x),
+            set: x => bridgeRequest(t => Bridge.requestSetBridgeTheme(x, t)),
         }),
         statusBarAppearance: computed({
             get: () => toValue(statusBarAppearance),
-            set: x => Bridge.requestSetStatusBarAppearance(x),
+            set: x => bridgeRequest(t => Bridge.requestSetStatusBarAppearance(x, t)),
         }),
         navigationBarAppearance: computed({
             get: () => toValue(navigationBarAppearance),
-            set: x => Bridge.requestSetNavigationBarAppearance(x),
+            set: x => bridgeRequest(t => Bridge.requestSetNavigationBarAppearance(x, t)),
         }),
 
         supportsLockScreen,

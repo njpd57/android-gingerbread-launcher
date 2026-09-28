@@ -6,6 +6,7 @@ import { useTogglesStore } from "./useTogglesStore";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { useHomeLayoutStore } from "./useHomeLayoutStore";
 import { DEFAULT_PAGE, PAGE_COUNT, useWorkspaceStore } from "./useWorkspaceStore";
+import { showToast } from "@/utils/toast";
 
 /** A live wallpaper drawn by the launcher (src/wallpaper/), or Android's own wallpaper. */
 export type LiveWallpaperKind = 'nexus' | 'grass' | 'galaxy' | 'magicSmoke' | 'polarClock';
@@ -122,9 +123,9 @@ export const useSettingsStore = defineStore('settings', () =>
         if (layout.hasShortcut(packageName)) return;
 
         if (layout.addAppAnywhere(packageName, label, DEFAULT_PAGE))
-            Bridge.showToast(`Se ha creado el acceso directo «${label}».`);
+            showToast(`Se ha creado el acceso directo «${label}».`);
         else
-            Bridge.showToast(`No hay espacio para el icono de «${label}».`);
+            showToast(`No hay espacio para el icono de «${label}».`);
     });
 
     // scroll the system wallpaper along with the pages, like a regular launcher

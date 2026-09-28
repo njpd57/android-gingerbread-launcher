@@ -6,6 +6,7 @@ import { normalizeFeedUrl, parseFeed, type FeedItem } from '@/utils/rss';
 import { bridgeHas } from '@/utils/bridge-utils';
 import WidgetDialog from '@/components/WidgetDialog.vue';
 import GbButton from '@/components/GbButton.vue';
+import { bridgeRequest, showToast } from '@/utils/toast';
 
 // The latest headlines of an RSS or Atom feed (4x2). Tapping a headline opens it (our Bridge fork's
 // requestOpenUrl); tapping the title changes the feed. The WebView can only read feeds that allow CORS,
@@ -88,9 +89,9 @@ function open(item: FeedItem)
 {
     if (!item.link) return;
     if (canOpen)
-        Bridge.requestOpenUrl(item.link, true);
+        bridgeRequest(t => Bridge.requestOpenUrl(item.link, t));
     else
-        Bridge.showToast('Tu versión de Bridge no puede abrir enlaces.');
+        showToast('Tu versión de Bridge no puede abrir enlaces.');
 }
 
 const isEditing = ref(false);

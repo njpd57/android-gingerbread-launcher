@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import type { BridgeContact, BridgeGetContactsResponse } from "@/types/bridge-fork";
+import { bridgeRequest } from "@/utils/toast";
 
 // The device's contacts, for the favorite contacts widget, direct dial and the search panel. Only
 // our Bridge fork can read them (READ_CONTACTS) and place calls directly (CALL_PHONE); without the
@@ -62,11 +63,11 @@ export const useContactsStore = defineStore('contacts', () =>
         canCall,
         version,
         fetchContacts,
-        requestAccess: () => Bridge.requestContactsPermission(true),
-        requestCallAccess: () => bridgeHas('requestCallPhonePermission') && Bridge.requestCallPhonePermission(true),
+        requestAccess: () => bridgeRequest(t => Bridge.requestContactsPermission(t)),
+        requestCallAccess: () => bridgeHas('requestCallPhonePermission') && bridgeRequest(t => Bridge.requestCallPhonePermission(t)),
         /** Calls right away with CALL_PHONE; without it, opens the dialer with the number typed in. */
-        call: (number: string) => Bridge.requestCallPhoneNumber(number, true),
-        openContact: (c: BridgeContact) => Bridge.requestOpenContact(c.lookupKey, true),
+        call: (number: string) => bridgeRequest(t => Bridge.requestCallPhoneNumber(number, t)),
+        openContact: (c: BridgeContact) => bridgeRequest(t => Bridge.requestOpenContact(c.lookupKey, t)),
         /** Takes anything with a `lookupKey`, so widgets that only kept that (not the full contact) can use it too. */
         photoUrl: (c: { lookupKey: string }) => Bridge.getContactPhotoURL(c.lookupKey),
     };

@@ -6,6 +6,7 @@ import { searchContacts } from '@/utils/search';
 import type { BridgeContact } from '@/types/bridge-fork';
 import ContactGlyph from '@/widgets/search/ContactGlyph.vue';
 import WidgetDialog from '@/components/WidgetDialog.vue';
+import { bridgeRequest } from '@/utils/toast';
 
 // Gingerbread's "Direct dial" / "Direct message" shortcuts (1x1): pick a contact and one of their
 // numbers once, and the icon calls or texts that number straight away from then on. Reconfigure by
@@ -90,7 +91,7 @@ function onClick()
     if (props.mode === 'call')
         contacts.call(data.value.number);
     else
-        Bridge.requestOpenUrl(`smsto:${data.value.number}`);
+        bridgeRequest(t => Bridge.requestOpenUrl(`smsto:${data.value.number}`, t));
 }
 </script>
 

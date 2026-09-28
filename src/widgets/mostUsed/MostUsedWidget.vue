@@ -42,11 +42,11 @@ const shown = computed(() =>
     <div class="most-used">
         <button
             v-for="app in shown"
-            :key="app.packageName"
+            :key="app.key"
             class="app"
             :aria-label="app.label"
-            @click="launcher.launch(app.packageName)">
-            <Shortcut :package-name="app.packageName" :label="app.label" />
+            @click="launcher.launch(app)">
+            <Shortcut :package-name="app.packageName" :user-serial="app.userSerial" :label="app.label" />
         </button>
 
         <div v-if="shown.length === 0" class="empty">

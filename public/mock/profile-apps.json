@@ -1,0 +1,158 @@
+{
+  "apps": [
+    {
+      "packageName": "com.tored.bridgelauncher",
+      "label": "Bridge Launcher",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.calendar",
+      "label": "Calendar",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.android.camera2",
+      "label": "Camera",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.android.chrome",
+      "label": "Chrome",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.deskclock",
+      "label": "Clock",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.contacts",
+      "label": "Contacts",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.apps.docs",
+      "label": "Drive",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.documentsui",
+      "label": "Files",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.gm",
+      "label": "Gmail",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.googlequicksearchbox",
+      "label": "Google",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.android.vending",
+      "label": "Google Play Store",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.apps.maps",
+      "label": "Maps",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.apps.messaging",
+      "label": "Messages",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.dialer",
+      "label": "Phone",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.apps.photos",
+      "label": "Photos",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.android.stk",
+      "label": "SIM Toolkit",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.android.settings",
+      "label": "Settings",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.android.traceur",
+      "label": "System Tracing",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.youtube",
+      "label": "YouTube",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.apps.youtube.music",
+      "label": "YouTube Music",
+      "userSerial": 0,
+      "profile": "personal",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.calendar",
+      "label": "Calendar",
+      "userSerial": 10,
+      "profile": "work",
+      "isPaused": false
+    },
+    {
+      "packageName": "com.google.android.gm",
+      "label": "Gmail",
+      "userSerial": 10,
+      "profile": "work",
+      "isPaused": false
+    }
+  ]
+}

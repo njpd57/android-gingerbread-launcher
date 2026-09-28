@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useHomeLayoutStore } from '@/stores/useHomeLayoutStore';
 import { loadPhoto, prunePhotos, savePhoto } from './photo-storage';
 import { shrinkImage } from './resize';
+import { showToast } from '@/utils/toast';
 
 // Gingerbread's photo frame (2x2): a photo with a white border, slightly tilted. Tapping it picks a
 // photo with <input type="file">, which only opens Android's picker on our Bridge fork (improvement 1.2).
@@ -61,7 +62,7 @@ async function onPicked()
     }
     catch
     {
-        Bridge.showToast('No se pudo cargar la foto.');
+        showToast('No se pudo cargar la foto.');
     }
     finally
     {

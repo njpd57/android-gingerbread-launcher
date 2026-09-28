@@ -24,12 +24,12 @@ const sortedApps = computed(() =>
 
         <button
             v-for="app in sortedApps"
-            :key="app.packageName"
+            :key="app.key"
             class="row"
-            @click="Bridge.requestOpenAppInfo(app.packageName, true)">
+            @click="apps.openAppInfo(app)">
             <img
                 class="row-icon"
-                :src="Bridge.getDefaultAppIconURL(app.packageName)"
+                :src="apps.iconURL(app)"
                 loading="lazy"
                 alt="" />
             <span class="text">

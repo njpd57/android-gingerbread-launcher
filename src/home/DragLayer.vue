@@ -28,6 +28,7 @@ const ghostStyle = computed(() =>
             <Shortcut
                 v-if="drag.active.ghost.type === 'app'"
                 :package-name="drag.active.ghost.packageName"
+                :user-serial="drag.active.ghost.userSerial"
                 :label="drag.active.ghost.label" />
             <Shortcut v-else-if="drag.active.ghost.type === 'folder'" :label="drag.active.ghost.name">
                 <FolderIcon />

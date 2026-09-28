@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMenuStore } from '@/stores/useMenuStore';
+import { bridgeRequest } from '@/utils/toast';
 
 const menu = useMenuStore();
 
@@ -45,7 +46,7 @@ function run(action: () => void)
                     <span>Apariencia</span>
                 </button>
 
-                <button class="item" @click="run(() => Bridge.requestExpandNotificationShade(true))">
+                <button class="item" @click="run(() => bridgeRequest(t => Bridge.requestExpandNotificationShade(t)))">
                     <svg viewBox="0 0 32 32" aria-hidden="true">
                         <rect x="5" y="4" width="22" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2" />
                         <path d="M9 9h14M9 13h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -54,7 +55,7 @@ function run(action: () => void)
                     <span>Notificaciones</span>
                 </button>
 
-                <button class="item" @click="run(() => Bridge.requestOpenAndroidSettings(true))">
+                <button class="item" @click="run(() => bridgeRequest(t => Bridge.requestOpenAndroidSettings(t)))">
                     <svg viewBox="0 0 32 32" aria-hidden="true">
                         <g fill="currentColor">
                             <rect
@@ -69,7 +70,7 @@ function run(action: () => void)
                     <span>Ajustes</span>
                 </button>
 
-                <button class="item" @click="run(() => Bridge.requestOpenBridgeSettings(true))">
+                <button class="item" @click="run(() => bridgeRequest(t => Bridge.requestOpenBridgeSettings(t)))">
                     <svg viewBox="0 0 32 32" aria-hidden="true">
                         <path d="M2 14h28M2 24h28" stroke="currentColor" stroke-width="2" />
                         <path d="M4 24c0-9 5-14 12-14s12 5 12 14" fill="none" stroke="currentColor" stroke-width="2.5" />

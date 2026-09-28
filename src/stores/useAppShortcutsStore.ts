@@ -4,6 +4,7 @@ import { useBridgeEventStore } from "./useBridgeEventStore";
 import { useDragStore } from "./useDragStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import type { BridgeAppShortcut, BridgeGetAppShortcutsResponse } from "@/types/bridge-fork";
+import { bridgeRequest } from "@/utils/toast";
 
 export interface AppShortcutsMenu
 {
@@ -58,7 +59,7 @@ export const useAppShortcutsStore = defineStore('appShortcuts', () =>
     {
         const m = menu.value;
         if (!m) return;
-        Bridge.requestStartAppShortcut(m.packageName, shortcut.id, true);
+        bridgeRequest(t => Bridge.requestStartAppShortcut(m.packageName, shortcut.id, t));
         close();
     }
 
@@ -66,7 +67,7 @@ export const useAppShortcutsStore = defineStore('appShortcuts', () =>
     {
         const m = menu.value;
         if (!m) return;
-        Bridge.requestOpenAppInfo(m.packageName, true);
+        bridgeRequest(t => Bridge.requestOpenAppInfo(m.packageName, t));
         close();
     }
 

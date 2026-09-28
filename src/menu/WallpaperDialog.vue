@@ -4,6 +4,7 @@ import { useSettingsStore, type Level, type NexusFps, type WallpaperKind } from 
 import GbDialog from '@/components/GbDialog.vue';
 import GbButton from '@/components/GbButton.vue';
 import GbRadioRow from '@/components/GbRadioRow.vue';
+import { bridgeRequest } from '@/utils/toast';
 
 const menu = useMenuStore();
 const settings = useSettingsStore();
@@ -90,7 +91,7 @@ const fpsOptions: NexusFps[] = [30, 60, 120];
         </section>
 
         <section v-else class="options">
-            <GbButton class="wide" @click="Bridge.requestChangeSystemWallpaper(true)">
+            <GbButton class="wide" @click="bridgeRequest(t => Bridge.requestChangeSystemWallpaper(t))">
                 Elegir imagen…
             </GbButton>
         </section>

@@ -4,6 +4,7 @@ import { useBridgeEventStore } from "./useBridgeEventStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import { statusBarNotifications } from "@/utils/notifications";
 import type { BridgeGetNotificationsResponse, BridgeNotification } from "@/types/bridge-fork";
+import { bridgeRequest } from "@/utils/toast";
 
 // The device's active notifications. Only our Bridge fork can read them, and only after the user
 // gives Bridge notification access; otherwise the list stays empty and `canRead` is false.
@@ -70,6 +71,6 @@ export const useNotificationsStore = defineStore('notifications', () =>
         canRead,
         notifications: computed(() => [...byKey.value.values()]),
         statusBarNotifications: computed(() => statusBarNotifications(byKey.value.values())),
-        requestAccess: () => Bridge.requestOpenNotificationAccessSettings(true),
+        requestAccess: () => bridgeRequest(t => Bridge.requestOpenNotificationAccessSettings(t)),
     };
 });

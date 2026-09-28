@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineProps<{
     open?: boolean;
+    // a contact folder: a contact silhouette on the paper, like Gingerbread's live folders
+    contacts?: boolean;
 }>();
 </script>
 
@@ -23,6 +25,12 @@ defineProps<{
 
         <!-- paper peeking out -->
         <rect x="9" y="16" width="30" height="16" rx="1" fill="#f7f7f7" />
+
+        <!-- contact folders: a contact's head and shoulders peeking over the front panel -->
+        <g v-if="contacts" fill="#5b7fa8">
+            <circle cx="24" cy="17.5" r="3.6" />
+            <path d="M16.5 26c0-4 3.4-5.6 7.5-5.6s7.5 1.6 7.5 5.6z" />
+        </g>
 
         <!-- front panel: flat when closed, tilted open when the folder is open -->
         <path

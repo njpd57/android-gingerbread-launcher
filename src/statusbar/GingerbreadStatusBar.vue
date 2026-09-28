@@ -13,6 +13,7 @@ import { useBatteryStore } from '@/stores/useBatteryStore';
 import { useQuickSettingsStore } from '@/stores/useQuickSettingsStore';
 import { useAlarmStore } from '@/stores/useAlarmStore';
 import { dataActivityArrows, wifiArcs } from '@/utils/connectivity';
+import { bridgeRequest } from '@/utils/toast';
 
 const props = defineProps<{
     background: StatusBarBackground;
@@ -34,7 +35,7 @@ function openNotifications()
     if (notifications.isSupported)
         menu.isNotificationPanelOpen ? menu.closeAll() : menu.showNotificationPanel();
     else
-        Bridge.requestExpandNotificationShade(true);
+        bridgeRequest(t => Bridge.requestExpandNotificationShade(t));
 }
 
 // Wi-Fi has 3 arcs, the cell signal 4 bars. Our Bridge fork reports the real levels; on stock Bridge

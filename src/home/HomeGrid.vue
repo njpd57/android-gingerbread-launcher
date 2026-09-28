@@ -13,6 +13,8 @@ import WidgetView from '@/widgets/WidgetView.vue';
 
 const props = defineProps<{
     page: number;
+    // a miniature for the screen previews: not a drop target and not interactive
+    preview?: boolean;
 }>();
 
 const apps = useAppsStore();
@@ -24,14 +26,20 @@ const menu = useMenuStore();
 
 const el = ref<HTMLElement>();
 
-onMounted(() => drag.registerGrid(props.page, el.value ?? null));
-onBeforeUnmount(() => drag.registerGrid(props.page, null));
+onMounted(() =>
+{
+    if (!props.preview) drag.registerGrid(props.page, el.value ?? null);
+});
+onBeforeUnmount(() =>
+{
+    if (!props.preview) drag.registerGrid(props.page, null);
+});
 
 const items = computed(() => layout.items.filter(i =>
     i.page === props.page
     && layout.isInGrid(i)
     // hide shortcuts to apps that aren't installed (once the app list has loaded)
-    && (i.type !== 'app' || apps.apps.size === 0 || apps.apps.has(i.packageName))
+    && (i.type !== 'app' || apps.apps.size === 0 || apps.has(i))
 ));
 
 const dropOutline = computed(() =>
@@ -58,8 +66,9 @@ const longPress = useLongPress<{ item: HomeItem; el: HTMLElement }>(({ item, el 
 {
     const rect = el.getBoundingClientRect();
     drag.start({ source: 'home', itemId: item.id }, pos.x, pos.y, rect);
-    if (item.type === 'app')
-        appShortcuts.open(item.packageName, apps.apps.get(item.packageName)?.label ?? item.label, rect);
+    // shortcuts are only read from the personal profile
+    if (item.type === 'app' && item.userSerial == null)
+        appShortcuts.open(item.packageName, apps.get(item)?.label ?? item.label, rect);
 });
 
 function onItemPointerDown(item: HomeItem, e: PointerEvent)
@@ -80,7 +89,7 @@ function onItemClickCapture(e: MouseEvent)
 function onItemClick(item: HomeItem)
 {
     if (item.type === 'app')
-        launcher.launch(item.packageName);
+        launcher.launch(item);
     else if (item.type === 'folder')
         menu.showFolder(item.id);
 }
@@ -90,6 +99,7 @@ function onItemClick(item: HomeItem)
 <template>
     <div
         class="home-grid"
+        :class="{ preview }"
         ref="el"
         :style="{ 'grid-template-rows': `repeat(${layout.rows}, 1fr)` }">
         <div
@@ -109,9 +119,10 @@ function onItemClick(item: HomeItem)
             <Shortcut
                 v-if="item.type === 'app'"
                 :package-name="item.packageName"
-                :label="apps.apps.get(item.packageName)?.label ?? item.label" />
+                :user-serial="item.userSerial"
+                :label="apps.get(item)?.label ?? item.label" />
             <Shortcut v-else-if="item.type === 'folder'" :label="item.name">
-                <FolderIcon :open="menu.openFolderId === item.id" />
+                <FolderIcon :open="menu.openFolderId === item.id" :contacts="!!item.source" />
             </Shortcut>
             <WidgetView v-else :kind="item.widget" :widget-id="item.id" />
         </div>
@@ -132,6 +143,10 @@ $gingerbread-orange: #ffa800;
     grid-template-columns: repeat(4, 1fr);
     height: 100%;
     padding: 0 4px;
+
+    &.preview {
+        pointer-events: none;
+    }
 
     > .home-item {
         min-width: 0;

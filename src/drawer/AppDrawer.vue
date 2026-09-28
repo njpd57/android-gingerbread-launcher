@@ -12,6 +12,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import OverscrollGlow from '@/components/OverscrollGlow.vue';
 import type { InstalledAppInfo } from '@/stores/useAppsStore';
 import HomeIcon from '@/home/icons/HomeIcon.vue';
+import { toAppRef } from '@/utils/appKey';
 
 const apps = useAppsStore();
 const launcher = useAppLauncherStore();
@@ -30,6 +31,10 @@ const sortedApps = computed(() =>
         .sort((a, b) => a.label.localeCompare(b.label))
 );
 
+// work profile apps (Bridge fork) go in their own "Trabajo" section, below the personal ones
+const personalApps = computed(() => sortedApps.value.filter(a => !a.isWork));
+const workApps = computed(() => sortedApps.value.filter(a => a.isWork));
+
 // like Gingerbread, the drawer always opens scrolled to the top
 watch(() => drawer.isOpen, isOpen =>
 {
@@ -41,8 +46,10 @@ watch(() => drawer.isOpen, isOpen =>
 // menu; the drawer only closes once the finger moves, so the menu can show over it
 const longPress = useLongPress<{ app: InstalledAppInfo; el: HTMLElement }>(({ app, el }, pos) =>
 {
-    drag.start({ source: 'drawer', packageName: app.packageName, label: app.label }, pos.x, pos.y);
-    appShortcuts.open(app.packageName, app.label, el.getBoundingClientRect());
+    drag.start({ source: 'drawer', ...toAppRef(app), label: app.label }, pos.x, pos.y);
+    // shortcuts are only read from the personal profile
+    if (!app.isWork)
+        appShortcuts.open(app.packageName, app.label, el.getBoundingClientRect());
 });
 
 watch(() => drag.hasMoved, moved =>
@@ -51,10 +58,10 @@ watch(() => drag.hasMoved, moved =>
         drawer.close();
 });
 
-function launch(packageName: string)
+function launch(app: InstalledAppInfo)
 {
     if (longPress.consumeLongPress()) return;
-    launcher.launch(packageName);
+    launcher.launch(app);
 }
 
 </script>
@@ -73,24 +80,28 @@ function launch(packageName: string)
                 <OverscrollGlow edge="top" :intensity="glow.start.value" :pulling="glow.pulling.value" />
                 <OverscrollGlow edge="bottom" :intensity="glow.end.value" :pulling="glow.pulling.value" />
                 <div class="grid" ref="gridEl">
-                    <button
-                        v-for="app in sortedApps"
-                        :key="app.packageName"
-                        class="app"
-                        @pointerdown="longPress.down({ app, el: $event.currentTarget as HTMLElement }, $event)"
-                        @pointermove="longPress.move"
-                        @pointerup="longPress.cancel"
-                        @pointercancel="longPress.cancel"
-                        @pointerleave="longPress.cancel"
-                        @contextmenu.prevent
-                        @click="launch(app.packageName)">
-                        <img
-                            :src="Bridge.getDefaultAppIconURL(app.packageName)"
-                            loading="lazy"
-                            draggable="false"
-                            alt="" />
-                        <span class="label">{{ app.label }}</span>
-                    </button>
+                    <template v-for="section in [personalApps, workApps]">
+                        <div v-if="section === workApps && workApps.length > 0" class="section-title">Trabajo</div>
+                        <button
+                            v-for="app in section"
+                            :key="app.key"
+                            class="app"
+                            :class="{ paused: app.isPaused }"
+                            @pointerdown="longPress.down({ app, el: $event.currentTarget as HTMLElement }, $event)"
+                            @pointermove="longPress.move"
+                            @pointerup="longPress.cancel"
+                            @pointercancel="longPress.cancel"
+                            @pointerleave="longPress.cancel"
+                            @contextmenu.prevent
+                            @click="launch(app)">
+                            <img
+                                :src="apps.iconURL(app)"
+                                loading="lazy"
+                                draggable="false"
+                                alt="" />
+                            <span class="label">{{ app.label }}</span>
+                        </button>
+                    </template>
 
                     <div v-if="sortedApps.length === 0" class="message">
                         <template v-if="apps.requestStatus === RequestStatus.Error">
@@ -192,10 +203,28 @@ button {
                 word-break: break-word;
             }
 
+            // work apps while "work apps" are turned off (tapping one asks to turn them on)
+            &.paused > img {
+                filter: grayscale(1) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6));
+                opacity: 0.6;
+            }
+
             // Gingerbread's orange pressed highlight
             &:active {
                 background: linear-gradient(to bottom, rgba($gingerbread-orange, 0.9), rgba(#e07000, 0.9));
             }
+        }
+
+        // like the category headers in Gingerbread's lists: gray bar with small white text
+        > .section-title {
+            grid-column: 1 / -1;
+            margin: 10px 2px 4px;
+            padding: 3px 8px;
+            background: linear-gradient(to bottom, #555, #3a3a3a);
+            font-size: 13px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 1px 1px #000;
         }
 
         > .message {

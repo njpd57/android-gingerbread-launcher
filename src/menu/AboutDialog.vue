@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useNow } from '@vueuse/core';
 import { useMenuStore } from '@/stores/useMenuStore';
 import { useBridgeEventStore } from '@/stores/useBridgeEventStore';
@@ -15,6 +15,9 @@ import { bridgeHas } from '@/utils/bridge-utils';
 import { formatInsets } from '@/utils/diagnostics';
 import GbDialog from '@/components/GbDialog.vue';
 import GbButton from '@/components/GbButton.vue';
+import { bridgeRequest, showToast } from '@/utils/toast';
+import { backupFileName, createBackup, parseBackup, restoreBackup, type LauncherBackup } from '@/utils/backup';
+import type { AnyBridgeEventListener } from '@/stores/useBridgeEventStore';
 
 // "Acerca de y diagnóstico": versions, the screen, the insets Bridge reports (live), permissions, the
 // last API error and the last Bridge events. Made for finding bugs on the phone without adb.
@@ -96,10 +99,73 @@ function ago(time: number)
     return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min`;
 }
 
+// backup (idea 47): the whole desktop as a JSON file. The fork saves it with Android's "Save as"
+// dialog; stock Bridge can't save files, so there it goes to the clipboard
+const canSaveFile = bridgeHas('requestSaveFile');
+const fileInput = ref<HTMLInputElement>();
+const pendingRestore = ref<LauncherBackup | null>(null);
+
+function exportBackup()
+{
+    const now = new Date();
+    const json = JSON.stringify(createBackup(localStorage, now));
+    if (canSaveFile)
+    {
+        bridgeRequest(t => Bridge.requestSaveFile(backupFileName(now), json, 'application/json', t));
+        return;
+    }
+    navigator.clipboard.writeText(json).then(
+        () => showToast('Copia de seguridad copiada al portapapeles.', true),
+        () => showToast('No se pudo copiar la copia de seguridad.', true));
+}
+
+const onFileSaved: AnyBridgeEventListener = ev =>
+{
+    if (ev.name !== 'fileSaved') return;
+    if (ev.newValue.result === 'saved') showToast('Copia de seguridad guardada.');
+    else if (ev.newValue.result === 'failed') showToast('No se pudo guardar la copia de seguridad.', true);
+};
+bridgeEvents.addEventListener(onFileSaved);
+onBeforeUnmount(() => bridgeEvents.removeEventListener(onFileSaved));
+
+async function onBackupPicked()
+{
+    const input = fileInput.value;
+    const file = input?.files?.[0];
+    if (input) input.value = '';
+    if (!file) return;
+    try
+    {
+        pendingRestore.value = parseBackup(await file.text());
+    }
+    catch (err)
+    {
+        showToast(err instanceof Error ? err.message : String(err), true);
+    }
+}
+
+const pendingRestoreDate = computed(() =>
+{
+    const created = pendingRestore.value?.createdAt;
+    return created ? new Date(created).toLocaleString('es') : 'fecha desconocida';
+});
+
+function confirmRestore()
+{
+    if (!pendingRestore.value) return;
+    restoreBackup(localStorage, pendingRestore.value);
+    location.reload();
+}
+
+watch(isOpen, open =>
+{
+    if (!open) pendingRestore.value = null;
+});
+
 function openConsole()
 {
     menu.closeAll();
-    Bridge.requestOpenDeveloperConsole(true);
+    bridgeRequest(t => Bridge.requestOpenDeveloperConsole(t));
 }
 </script>
 
@@ -111,6 +177,31 @@ function openConsole()
             <dt>Bridge</dt><dd>{{ bridgeVersion }}{{ hasFork ? ' · nuestro fork' : '' }}</dd>
             <dt>Android</dt><dd>API {{ androidApi }}</dd>
         </dl>
+
+        <div class="section-title">Copia de seguridad</div>
+        <div class="backup">
+            <template v-if="pendingRestore">
+                <p class="text">
+                    ¿Reemplazar el escritorio actual (pantallas, carpetas, widgets y ajustes) con la copia del
+                    {{ pendingRestoreDate }}? Lo que no esté en la copia se perderá.
+                </p>
+                <div class="buttons">
+                    <GbButton @click="confirmRestore">Restaurar</GbButton>
+                    <GbButton @click="pendingRestore = null">Cancelar</GbButton>
+                </div>
+            </template>
+            <template v-else>
+                <p class="text">
+                    Guarda las pantallas, carpetas, widgets y ajustes en un archivo{{ canSaveFile ? '' : ' (con este Bridge, se copia al portapapeles)' }}.
+                    Las fotos del marco de fotos no se incluyen.
+                </p>
+                <div class="buttons">
+                    <GbButton @click="exportBackup">Exportar</GbButton>
+                    <GbButton @click="fileInput?.click()">Importar</GbButton>
+                </div>
+            </template>
+            <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onBackupPicked" />
+        </div>
 
         <div class="section-title">Pantalla</div>
         <dl class="rows">
@@ -164,6 +255,24 @@ function openConsole()
 
 .mono {
     font-family: monospace;
+}
+
+.backup {
+    padding-bottom: 8px;
+
+    > .text {
+        padding-bottom: 4px;
+    }
+
+    > .buttons {
+        display: flex;
+        gap: 8px;
+        padding: 0 16px;
+
+        > * {
+            flex: 1;
+        }
+    }
 }
 
 // label on the left, value on the right

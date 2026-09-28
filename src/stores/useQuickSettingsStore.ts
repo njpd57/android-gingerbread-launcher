@@ -4,6 +4,7 @@ import { useBridgeEventStore } from "./useBridgeEventStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import { BRIGHTNESS_LEVELS, type BrightnessStep } from "@/utils/brightness";
 import type { BridgeRingerMode, BridgeScreenBrightness, BridgeSystemPanel } from "@/types/bridge-fork";
+import { bridgeRequest, showToast } from "@/utils/toast";
 
 const RINGER_MODE_CYCLE: Record<BridgeRingerMode, BridgeRingerMode> = {
     normal: 'vibrate',
@@ -86,8 +87,8 @@ export const useQuickSettingsStore = defineStore('quickSettings', () =>
     function ensureCanWriteSystemSettings()
     {
         if (canWriteSystemSettings.value) return true;
-        Bridge.showToast('Permite que Bridge modifique los ajustes del sistema para cambiar el brillo y la rotación.', true);
-        Bridge.requestOpenWriteSystemSettingsPermission(true);
+        showToast('Permite que Bridge modifique los ajustes del sistema para cambiar el brillo y la rotación.', true);
+        bridgeRequest(t => Bridge.requestOpenWriteSystemSettingsPermission(t));
         return false;
     }
 
@@ -111,36 +112,36 @@ export const useQuickSettingsStore = defineStore('quickSettings', () =>
         supportsMusicVolume,
         musicVolume,
 
-        openPanel: (panel: BridgeSystemPanel) => Bridge.requestOpenSystemPanel(panel, true),
-        toggleFlashlight: () => Bridge.requestSetFlashlightOn(!flashlightOn.value, true),
-        toggleMasterSync: () => Bridge.requestSetMasterSyncOn(!masterSyncOn.value, true),
+        openPanel: (panel: BridgeSystemPanel) => bridgeRequest(t => Bridge.requestOpenSystemPanel(panel, t)),
+        toggleFlashlight: () => bridgeRequest(t => Bridge.requestSetFlashlightOn(!flashlightOn.value, t)),
+        toggleMasterSync: () => bridgeRequest(t => Bridge.requestSetMasterSyncOn(!masterSyncOn.value, t)),
         toggleAutoRotate()
         {
             if (ensureCanWriteSystemSettings())
-                Bridge.requestSetAutoRotateOn(!autoRotateOn.value, true);
+                bridgeRequest(t => Bridge.requestSetAutoRotateOn(!autoRotateOn.value, t));
         },
         setBrightness(step: BrightnessStep)
         {
             if (!ensureCanWriteSystemSettings()) return;
             if (step === 'auto')
-                Bridge.requestSetScreenBrightnessAuto(true, true);
+                bridgeRequest(t => Bridge.requestSetScreenBrightnessAuto(true, t));
             else
-                Bridge.requestSetScreenBrightnessLevel(BRIGHTNESS_LEVELS[step], true);
+                bridgeRequest(t => Bridge.requestSetScreenBrightnessLevel(BRIGHTNESS_LEVELS[step], t));
         },
         setMusicVolume(level: number)
         {
             musicVolume.value = level;
-            Bridge.requestSetMusicVolume(Math.min(1, Math.max(0, level)), true);
+            bridgeRequest(t => Bridge.requestSetMusicVolume(Math.min(1, Math.max(0, level)), t));
         },
         cycleRingerMode()
         {
             if (!canAccessNotificationPolicy.value)
             {
-                Bridge.showToast('Permite que Bridge acceda a "No molestar" para cambiar el modo de sonido.', true);
-                Bridge.requestOpenNotificationPolicyAccessSettings(true);
+                showToast('Permite que Bridge acceda a "No molestar" para cambiar el modo de sonido.', true);
+                bridgeRequest(t => Bridge.requestOpenNotificationPolicyAccessSettings(t));
                 return;
             }
-            Bridge.requestSetRingerMode(RINGER_MODE_CYCLE[ringerMode.value], true);
+            bridgeRequest(t => Bridge.requestSetRingerMode(RINGER_MODE_CYCLE[ringerMode.value], t));
         },
     };
 });

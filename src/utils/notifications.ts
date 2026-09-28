@@ -42,6 +42,18 @@ export function notificationPanelSections(notifications: Iterable<BridgeNotifica
     };
 }
 
+/**
+ * The messages widget's conversations: the default messaging app's notifications (not its group summary
+ * or ongoing ones such as "sending…"), newest first.
+ */
+export function messageNotifications(notifications: Iterable<BridgeNotification>, messagingPackage: string | null): BridgeNotification[]
+{
+    if (!messagingPackage) return [];
+    return [...notifications]
+        .filter(n => n.packageName === messagingPackage && !n.isGroupSummary && !n.isOngoing)
+        .sort((a, b) => b.postTime - a.postTime);
+}
+
 /** "11:02 AM" for today (like the status bar clock), a short date otherwise. */
 export function formatNotificationTime(postTime: number, now: Date): string
 {

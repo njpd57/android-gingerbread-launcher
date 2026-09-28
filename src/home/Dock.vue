@@ -5,12 +5,15 @@ import { useAppLauncherStore } from '@/stores/useAppLauncherStore';
 import { PAGE_COUNT, useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import { useDrawerStore } from '@/stores/useDrawerStore';
 import { useDragStore } from '@/stores/useDragStore';
+import { useMenuStore } from '@/stores/useMenuStore';
+import { useLongPress } from '@/composables/useLongPress';
 import PhoneIcon from './icons/PhoneIcon.vue';
 import AllAppsIcon from './icons/AllAppsIcon.vue';
 import BrowserIcon from './icons/BrowserIcon.vue';
 import TrashIcon from './icons/TrashIcon.vue';
 import { bridgeHas } from '@/utils/bridge-utils';
 import type { BridgeDefaultAppRole } from '@/types/bridge-fork';
+import { showToast } from '@/utils/toast';
 
 // fallback for Bridge builds that can't tell us the default dialer/browser: the first installed candidate
 const PHONE_PACKAGES = [
@@ -36,6 +39,7 @@ const launcher = useAppLauncherStore();
 const workspace = useWorkspaceStore();
 const drawer = useDrawerStore();
 const drag = useDragStore();
+const menu = useMenuStore();
 
 // while dragging, the hotseat becomes the delete zone
 const hotseatEl = ref<HTMLElement>();
@@ -58,7 +62,25 @@ function launchDefaultApp(role: BridgeDefaultAppRole, candidates: string[], notF
     if (packageName)
         launcher.launch(packageName);
     else
-        Bridge.showToast(notFoundMessage);
+        showToast(notFoundMessage);
+}
+
+// Gingerbread opened recent apps by long-pressing home, which Bridge doesn't receive: long-press the drawer button
+const drawerLongPress = useLongPress<null>(() => menu.showDialog('recentApps'));
+
+function openDrawer()
+{
+    if (drawerLongPress.consumeLongPress()) return;
+    drawer.open();
+}
+
+// like Gingerbread, long-pressing the page dots shows every screen in miniature
+const dotsLongPress = useLongPress<null>(() => menu.showDialog('screens'));
+
+function goToPage(page: number)
+{
+    if (dotsLongPress.consumeLongPress()) return;
+    workspace.goToPage(page);
 }
 
 </script>
@@ -68,8 +90,14 @@ function launchDefaultApp(role: BridgeDefaultAppRole, candidates: string[], notF
         <button
             class="dots left"
             :disabled="dotsLeft === 0"
-            aria-label="Página anterior"
-            @click="workspace.goToPage(workspace.currentPage - 1)">
+            aria-label="Página anterior (mantén pulsado para ver todas)"
+            @pointerdown="dotsLongPress.down(null, $event)"
+            @pointermove="dotsLongPress.move"
+            @pointerup="dotsLongPress.cancel"
+            @pointercancel="dotsLongPress.cancel"
+            @pointerleave="dotsLongPress.cancel"
+            @contextmenu.prevent
+            @click="goToPage(workspace.currentPage - 1)">
             <span v-for="i in dotsLeft" :key="i" class="dot"></span>
         </button>
 
@@ -91,8 +119,14 @@ function launchDefaultApp(role: BridgeDefaultAppRole, candidates: string[], notF
             </button>
             <button
                 class="hotseat-button"
-                aria-label="Aplicaciones"
-                @click="drawer.open()">
+                aria-label="Aplicaciones (mantén pulsado para ver las recientes)"
+                @pointerdown="drawerLongPress.down(null, $event)"
+                @pointermove="drawerLongPress.move"
+                @pointerup="drawerLongPress.cancel"
+                @pointercancel="drawerLongPress.cancel"
+                @pointerleave="drawerLongPress.cancel"
+                @contextmenu.prevent
+                @click="openDrawer">
                 <AllAppsIcon />
             </button>
             <button
@@ -106,8 +140,14 @@ function launchDefaultApp(role: BridgeDefaultAppRole, candidates: string[], notF
         <button
             class="dots right"
             :disabled="dotsRight === 0"
-            aria-label="Página siguiente"
-            @click="workspace.goToPage(workspace.currentPage + 1)">
+            aria-label="Página siguiente (mantén pulsado para ver todas)"
+            @pointerdown="dotsLongPress.down(null, $event)"
+            @pointermove="dotsLongPress.move"
+            @pointerup="dotsLongPress.cancel"
+            @pointercancel="dotsLongPress.cancel"
+            @pointerleave="dotsLongPress.cancel"
+            @contextmenu.prevent
+            @click="goToPage(workspace.currentPage + 1)">
             <span v-for="i in dotsRight" :key="i" class="dot"></span>
         </button>
     </nav>

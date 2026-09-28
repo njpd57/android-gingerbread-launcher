@@ -24,6 +24,8 @@ import AgendaWidget from './agenda/AgendaWidget.vue';
 import ScreenTimeWidget from './screenTime/ScreenTimeWidget.vue';
 import FavContactsWidget from './favContacts/FavContactsWidget.vue';
 import DirectContactWidget from './directContact/DirectContactWidget.vue';
+import BookmarksWidget from './bookmarks/BookmarksWidget.vue';
+import MessagesWidget from './messages/MessagesWidget.vue';
 
 // Renders any widget by kind, filling the grid area it's placed in.
 // Used both on the home screen (HomeGrid) and for the item being dragged (DragLayer).
@@ -65,6 +67,8 @@ defineProps<{
         <FavContactsWidget v-else-if="kind === 'favContacts'" />
         <DirectContactWidget v-else-if="kind === 'directCall'" :widget-id="widgetId" mode="call" />
         <DirectContactWidget v-else-if="kind === 'directMessage'" :widget-id="widgetId" mode="message" />
+        <BookmarksWidget v-else-if="kind === 'bookmarks'" :widget-id="widgetId" />
+        <MessagesWidget v-else-if="kind === 'messages'" :preview="!widgetId" />
     </div>
 </template>
 

@@ -2,6 +2,9 @@ import { defineStore } from "pinia";
 import { computed, ref, shallowRef, watch } from "vue";
 import { GRID_COLS, useHomeLayoutStore, type WidgetKind } from "./useHomeLayoutStore";
 import { useWorkspaceStore } from "./useWorkspaceStore";
+import { useAppsStore } from "./useAppsStore";
+import { toAppRef } from "@/utils/appKey";
+import { bridgeRequest } from "@/utils/toast";
 
 const EDGE_PX = 28;
 const EDGE_DELAY_MS = 650;
@@ -10,13 +13,14 @@ const CLICK_GUARD_MS = 400;
 // the drag, which leaves the app shortcuts menu (opened by the same long press) on screen
 export const DRAG_MOVE_PX = 16;
 
+// apps carry `userSerial` when they're in the work profile
 export type DragPayload =
-    | { source: 'drawer'; packageName: string; label: string }
+    | { source: 'drawer'; packageName: string; userSerial?: number; label: string }
     | { source: 'home'; itemId: string }
-    | { source: 'folder'; folderId: string; packageName: string; label: string };
+    | { source: 'folder'; folderId: string; packageName: string; userSerial?: number; label: string };
 
 export type DragGhost =
-    | { type: 'app'; packageName: string; label: string }
+    | { type: 'app'; packageName: string; userSerial?: number; label: string }
     | { type: 'widget'; widget: WidgetKind; id: string }
     | { type: 'folder'; name: string };
 
@@ -42,6 +46,7 @@ export const useDragStore = defineStore('drag', () =>
 {
     const layout = useHomeLayoutStore();
     const workspace = useWorkspaceStore();
+    const apps = useAppsStore();
 
     const active = ref<ActiveDrag | null>(null);
     const pointer = ref({ x: 0, y: 0 });
@@ -113,10 +118,10 @@ export const useDragStore = defineStore('drag', () =>
             return;
         }
 
-        // apps dropped onto a folder go inside it
+        // apps dropped onto a folder go inside it (not into contact folders, which list contacts)
         const under = cellAt(x, y);
         const folder = under && layout.folderAt(under.page, under.x, under.y);
-        if (under && folder && isDraggingApp(a))
+        if (under && folder && !folder.source && isDraggingApp(a))
         {
             target.value = { kind: 'folder', ...under, folderId: folder.id };
             return;
@@ -212,7 +217,7 @@ export const useDragStore = defineStore('drag', () =>
         {
             const item = layout.items.find(i => i.id === payload.itemId);
             if (!item) return;
-            ghost = item.type === 'app' ? { type: 'app', packageName: item.packageName, label: item.label }
+            ghost = item.type === 'app' ? { type: 'app', ...toAppRef(item), label: item.label }
                 : item.type === 'folder' ? { type: 'folder', name: item.name }
                     : { type: 'widget', widget: item.widget, id: item.id };
             w = item.w;
@@ -220,7 +225,7 @@ export const useDragStore = defineStore('drag', () =>
         }
         else
         {
-            ghost = { type: 'app', packageName: payload.packageName, label: payload.label };
+            ghost = { type: 'app', ...toAppRef(payload), label: payload.label };
         }
 
         const rect = currentGridRect();
@@ -278,16 +283,19 @@ export const useDragStore = defineStore('drag', () =>
 
         // take the item out of where it came from...
         if (p.source === 'folder')
-            layout.removeFromFolder(p.folderId, p.packageName);
+            layout.removeFromFolder(p.folderId, p);
 
         if (t.kind === 'trash')
         {
             if (p.source === 'home')
                 layout.removeItem(p.itemId);
             // like Gingerbread: dropping an app from the drawer on the trash uninstalls it
-            // (Android asks for confirmation; appRemoved then cleans up the home screen)
+            // (Android asks for confirmation; appRemoved then cleans up the home screen).
+            // Work apps are managed by the organization, so their app info opens instead
+            else if (p.source === 'drawer' && p.userSerial != null)
+                apps.openAppInfo(p);
             else if (p.source === 'drawer')
-                Bridge.requestAppUninstall(p.packageName, true);
+                bridgeRequest(t => Bridge.requestAppUninstall(p.packageName, t));
             return;
         }
 
@@ -305,13 +313,13 @@ export const useDragStore = defineStore('drag', () =>
 
         if (t.kind === 'folder')
         {
-            layout.addToFolder(t.folderId, { packageName: app.packageName, label: app.label });
+            layout.addToFolder(t.folderId, { ...toAppRef(app), label: app.label });
             if (p.source === 'home')
                 layout.removeItem(p.itemId);
         }
         else
         {
-            layout.addApp(app.packageName, app.label, t.page, t.x, t.y);
+            layout.addApp(app.packageName, app.label, t.page, t.x, t.y, app.userSerial);
         }
     }
 

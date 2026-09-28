@@ -4,6 +4,7 @@ import { useBridgeEventStore } from "./useBridgeEventStore";
 import { useNotificationsStore } from "./useNotificationsStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import type { BridgeMediaSession } from "@/types/bridge-fork";
+import { bridgeRequest } from "@/utils/toast";
 
 // What's playing, for the music widget and the notification panel. Only our Bridge fork can see other
 // apps' media sessions, and only with notification access (Android lists them to notification listeners).
@@ -41,9 +42,9 @@ export const useMediaStore = defineStore('media', () =>
         session,
         artUrl,
         requestAccess: () => notifications.requestAccess(),
-        playPause: () => Bridge.requestMediaAction('playPause', true),
-        next: () => Bridge.requestMediaAction('next', true),
-        previous: () => Bridge.requestMediaAction('previous', true),
-        openApp: () => Bridge.requestOpenMediaApp(true),
+        playPause: () => bridgeRequest(t => Bridge.requestMediaAction('playPause', t)),
+        next: () => bridgeRequest(t => Bridge.requestMediaAction('next', t)),
+        previous: () => bridgeRequest(t => Bridge.requestMediaAction('previous', t)),
+        openApp: () => bridgeRequest(t => Bridge.requestOpenMediaApp(t)),
     };
 });

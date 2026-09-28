@@ -16,6 +16,7 @@ import OverscrollGlow from '@/components/OverscrollGlow.vue';
 import QuickToggles from './QuickToggles.vue';
 import MusicPlayer from '@/widgets/music/MusicPlayer.vue';
 import { useMediaStore } from '@/stores/useMediaStore';
+import { bridgeRequest } from '@/utils/toast';
 
 // Our own notification panel, in the style of Gingerbread's (2.3's dark one): "Borrar" at the top,
 // "En curso" and "Notificaciones" sections, and a handle at the bottom to close it. On top, a row of
@@ -80,7 +81,7 @@ const longPress = useLongPress<BridgeNotification>(n => menuFor.value = n);
 function open(n: BridgeNotification)
 {
     if (longPress.consumeLongPress()) return;
-    if (Bridge.requestOpenNotification(n.key, true))
+    if (bridgeRequest(t => Bridge.requestOpenNotification(n.key, t)))
         menu.closeAll();
 }
 
@@ -88,7 +89,7 @@ function openFromMenu()
 {
     const n = menuFor.value;
     menuFor.value = null;
-    if (n && Bridge.requestOpenNotification(n.key, true))
+    if (n && bridgeRequest(t => Bridge.requestOpenNotification(n.key, t)))
         menu.closeAll();
 }
 
@@ -96,14 +97,14 @@ function dismissFromMenu()
 {
     const n = menuFor.value;
     menuFor.value = null;
-    if (n) Bridge.requestDismissNotification(n.key, true);
+    if (n) bridgeRequest(t => Bridge.requestDismissNotification(n.key, t));
 }
 
 function appInfoFromMenu()
 {
     const n = menuFor.value;
     menuFor.value = null;
-    if (n && Bridge.requestOpenAppInfo(n.packageName, true))
+    if (n && bridgeRequest(t => Bridge.requestOpenAppInfo(n.packageName, t)))
         menu.closeAll();
 }
 
@@ -122,7 +123,7 @@ async function runAction(n: BridgeNotification, action: BridgeNotificationAction
         replyInput.value[0]?.focus();
         return;
     }
-    Bridge.requestNotificationAction(n.key, action.index, true);
+    bridgeRequest(t => Bridge.requestNotificationAction(n.key, action.index, t));
 }
 
 function sendReply()
@@ -130,7 +131,7 @@ function sendReply()
     const r = replyTo.value;
     const text = replyText.value.trim();
     if (!r || !text) return;
-    if (Bridge.requestReplyToNotification(r.key, r.action.index, text, true))
+    if (bridgeRequest(t => Bridge.requestReplyToNotification(r.key, r.action.index, text, t)))
     {
         replyTo.value = null;
         replyText.value = '';
@@ -150,7 +151,7 @@ function clearAll()
 function openSystemShade()
 {
     menu.closeAll();
-    Bridge.requestExpandNotificationShade(true);
+    bridgeRequest(t => Bridge.requestExpandNotificationShade(t));
 }
 </script>
 

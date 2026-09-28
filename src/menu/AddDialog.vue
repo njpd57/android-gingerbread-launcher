@@ -2,15 +2,17 @@
 import { computed, ref, watch } from 'vue';
 import { useElementSize } from '@vueuse/core';
 import { useAppsStore, type InstalledAppInfo } from '@/stores/useAppsStore';
-import { GRID_COLS, useHomeLayoutStore, WIDGET_SIZES, type WidgetKind } from '@/stores/useHomeLayoutStore';
+import { CONTACT_FOLDER_NAMES, GRID_COLS, useHomeLayoutStore, WIDGET_SIZES, type ContactFolderSource, type WidgetKind } from '@/stores/useHomeLayoutStore';
+import { useContactsStore } from '@/stores/useContactsStore';
 import { useMenuStore } from '@/stores/useMenuStore';
 import { useWorkspaceStore } from '@/stores/useWorkspaceStore';
 import GbDialog from '@/components/GbDialog.vue';
 import FolderIcon from '@/home/icons/FolderIcon.vue';
 import WidgetView from '@/widgets/WidgetView.vue';
 import { useHomeGridSize } from '@/composables/useHomeGridSize';
+import { showToast } from '@/utils/toast';
 
-type View = 'root' | 'apps' | 'widgets';
+type View = 'root' | 'apps' | 'widgets' | 'folders';
 
 const apps = useAppsStore();
 const layout = useHomeLayoutStore();
@@ -31,6 +33,7 @@ const title = computed(() =>
     {
         case 'apps': return 'Seleccionar aplicación';
         case 'widgets': return 'Seleccionar widget';
+        case 'folders': return 'Seleccionar carpeta';
         default: return 'Añadir a la pantalla de inicio';
     }
 });
@@ -58,6 +61,8 @@ const widgets: { kind: WidgetKind; label: string }[] = [
     { kind: 'forecast', label: 'Pronóstico' },
     { kind: 'sunMoon', label: 'Sol y luna' },
     { kind: 'rss', label: 'Titulares' },
+    { kind: 'bookmarks', label: 'Marcadores' },
+    { kind: 'messages', label: 'Mensajes' },
     { kind: 'power', label: 'Control de energía' },
     { kind: 'search', label: 'Búsqueda de aplicaciones' },
     { kind: 'mostUsed', label: 'Apps más usadas' },
@@ -98,14 +103,14 @@ function findSpot(w: number, h: number)
     const page = anchor?.page ?? workspace.currentPage;
     const spot = layout.findFreeSpot(page, w, h, anchor ?? undefined);
     if (!spot)
-        Bridge.showToast('No hay más espacio en esta pantalla de inicio');
+        showToast('No hay más espacio en esta pantalla de inicio');
     return spot;
 }
 
 function addApp(app: InstalledAppInfo)
 {
     const spot = findSpot(1, 1);
-    if (spot) layout.addApp(app.packageName, app.label, spot.page, spot.x, spot.y);
+    if (spot) layout.addApp(app.packageName, app.label, spot.page, spot.x, spot.y, app.userSerial);
     menu.closeAll();
 }
 
@@ -117,12 +122,16 @@ function addWidget(kind: WidgetKind)
     menu.closeAll();
 }
 
-function addFolder()
+function addFolder(source?: ContactFolderSource)
 {
     const spot = findSpot(1, 1);
-    if (spot) layout.addFolder(spot.page, spot.x, spot.y);
+    if (spot) layout.addFolder(spot.page, spot.x, spot.y, source);
     menu.closeAll();
 }
+
+// Gingerbread's "Folders" list: a new folder, plus live folders of contacts (Bridge fork)
+const contacts = useContactsStore();
+const contactFolders: ContactFolderSource[] = ['allContacts', 'starredContacts'];
 
 </script>
 
@@ -148,7 +157,7 @@ function addFolder()
                 </svg>
                 <span>Widgets</span>
             </button>
-            <button class="row" @click="addFolder">
+            <button class="row" @click="contacts.isSupported ? view = 'folders' : addFolder()">
                 <FolderIcon class="row-icon" />
                 <span>Carpetas</span>
             </button>
@@ -162,15 +171,26 @@ function addFolder()
             </button>
         </template>
 
+        <template v-else-if="view === 'folders'">
+            <button class="row" @click="addFolder()">
+                <FolderIcon class="row-icon" />
+                <span>Carpeta nueva</span>
+            </button>
+            <button v-for="source in contactFolders" :key="source" class="row" @click="addFolder(source)">
+                <FolderIcon class="row-icon" contacts />
+                <span>{{ CONTACT_FOLDER_NAMES[source] }}</span>
+            </button>
+        </template>
+
         <template v-else-if="view === 'apps'">
             <button
                 v-for="app in sortedApps"
-                :key="app.packageName"
+                :key="app.key"
                 class="row"
                 @click="addApp(app)">
                 <img
                     class="row-icon"
-                    :src="Bridge.getDefaultAppIconURL(app.packageName)"
+                    :src="apps.iconURL(app)"
                     loading="lazy"
                     alt="" />
                 <span>{{ app.label }}</span>

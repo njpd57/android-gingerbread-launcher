@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import type { BridgeAppUsage, BridgeGetAppUsageResponse } from "@/types/bridge-fork";
+import { bridgeRequest } from "@/utils/toast";
 
 // App usage from Android's own records, for "Apps más usadas" and the screen time widget. Only our
 // Bridge fork can read it, once the user gives Bridge "Usage access" in Android's settings. Widgets fetch
@@ -54,6 +55,6 @@ export const useUsageStore = defineStore('usage', () =>
         canRead,
         version,
         fetchUsage,
-        requestAccess: () => Bridge.requestOpenUsageAccessSettings(true),
+        requestAccess: () => bridgeRequest(t => Bridge.requestOpenUsageAccessSettings(t)),
     };
 });

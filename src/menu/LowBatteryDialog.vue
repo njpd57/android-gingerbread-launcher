@@ -2,6 +2,7 @@
 import { useBatteryStore } from '@/stores/useBatteryStore';
 import GbDialog from '@/components/GbDialog.vue';
 import GbButton from '@/components/GbButton.vue';
+import { bridgeRequest } from '@/utils/toast';
 
 // Gingerbread's low battery warning, shown when the level drops to 15 % and again at 5 %
 // (useBatteryStore decides when).
@@ -11,7 +12,7 @@ const battery = useBatteryStore();
 function openBatterySettings()
 {
     battery.dismissLowBatteryWarning();
-    Bridge.requestOpenAndroidSettings(true);
+    bridgeRequest(t => Bridge.requestOpenAndroidSettings(t));
 }
 </script>
 

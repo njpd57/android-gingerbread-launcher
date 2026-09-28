@@ -1,6 +1,6 @@
 # Funciones posibles con la API de Bridge
 
-**Estado:** las ideas 1 a 7, 9, 12, 15 a 38 ya están implementadas (marcadas con ✅), salvo la variante 4×2 de la 35. Las ideas 8, 10 y 11 quedan para más adelante (marcadas con ⏬ Baja prioridad). Las ideas 39 a 50 salen de una revisión de la API del 26/09/2026: la 39, 40, 41, 45, 49 y 50 están hechas y probadas en el teléfono (la 49 con el fork `c59ed75` o posterior); las demás, sin empezar. Las ideas 1 a 5 están probadas en un Samsung Galaxy Z Flip5 con Bridge 0.1.0alpha. Con nuestro fork de Bridge están probadas en el teléfono la 5 (con el estado de Wi-Fi, Bluetooth y el modo de sonido), la 7 (con la búsqueda web), la 16 (con eventos), la 25 y de la 30 a la 33. Todas las ideas implementadas están probadas en el teléfono. La 25, de la 30 a la 33 y de la 35 a la 37 necesitan nuestro fork.
+**Estado (28/09/2026):** todas las ideas están implementadas y probadas en el teléfono (marcadas con ✅), salvo la variante 4×2 de la 35 y las ideas 8, 10 y 11, que quedan para más adelante (⏬ Baja prioridad). Las ideas 39 a 50 salen de una revisión de la API del 26/09/2026 (la 49 necesita el fork `c59ed75` o posterior, la 47 guarda el archivo con `requestSaveFile` del fork); la 51 (apps del perfil de trabajo) se agregó el 28/09/2026. Las ideas 1 a 5 están probadas en un Samsung Galaxy Z Flip5 con Bridge 0.1.0alpha. Con nuestro fork de Bridge están probadas en el teléfono la 5 (con el estado de Wi-Fi, Bluetooth y el modo de sonido), la 7 (con la búsqueda web), la 16 (con eventos), la 25 y de la 30 a la 33. Todas las ideas implementadas están probadas en el teléfono. La 25, de la 30 a la 33 y de la 35 a la 37 necesitan nuestro fork.
 
 Revisión de todo lo que ofrece `@bridgelauncher/api` v0.1.0 (la última publicada), qué usa ya el launcher y qué se podría agregar. Las ideas van ordenadas por lo bien que encajan con Gingerbread y por el esfuerzo que requieren.
 
@@ -143,12 +143,14 @@ Un botón al final de **Apariencia** abre "Acerca de y diagnóstico" (`src/menu/
 - Un botón para abrir la **consola de desarrollo** de Bridge (`requestOpenDeveloperConsole`).
 - **Ya sirvió:** al abrirla por primera vez mostró que Bridge intercambia arriba e izquierda en todos los insets (ver "Fallos de Bridge" más abajo).
 
-### 13. Detectar funciones según la versión
+### 13. Detectar funciones según la versión ✅ Hecho
 Usar `getAndroidAPILevel()` para ocultar las opciones que el teléfono no soporta. Por ejemplo, la forma del recorte solo existe desde Android 12, y el modo noche "personalizado" desde Android 11.
+- **Hecho:** `utils/androidVersion.ts` (`supportsApiLevel()`, con tests). El launcher no ofrece nada que dependa de Android 11 o 12 (modo noche personalizado, forma del recorte), así que se aplica a lo que Bridge solo hace desde cierta versión: bloquear la pantalla (Android 9) y cambiar el modo noche (Android 11). Si Android es más viejo, se ven como "no disponible" y el aviso lo explica.
 - **Esfuerzo:** bajo, y se hace junto con las funciones que lo necesiten.
 
-### 14. Errores con el estilo del launcher
+### 14. Errores con el estilo del launcher ✅ Hecho
 Hoy, cuando algo falla, Bridge muestra su propio aviso (`showToastIfFailed`). Se podría pasar `false` y mostrar el error con un aviso al estilo Gingerbread, usando `getLastErrorMessage()` para el texto.
+- **Hecho:** aviso propio (`components/GbToast.vue`, `useToastStore`) y `bridgeRequest(t => Bridge.request…(…, t))` en `utils/toast.ts`: llama con `showToastIfFailed = false` y, si falla, muestra `getLastErrorMessage()` con el aviso Gingerbread. Todas las llamadas `request…` y los `Bridge.showToast` pasan por ahí.
 - **Esfuerzo:** bajo.
 
 ---
@@ -320,21 +322,24 @@ Gingerbread mostraba un panel con una barra al cambiar el volumen. Las teclas de
 - No se puso una barra dentro del reproductor del panel: su diseño es una fila, y el diálogo queda a una pulsación larga del mismo panel.
 - **Esfuerzo:** bajo.
 
-### 42. Aplicaciones recientes
+### 42. Aplicaciones recientes ✅ Hecho
 Manteniendo pulsado el botón de inicio, Gingerbread mostraba un diálogo con las 8 últimas apps usadas (2 filas de 4 iconos). Bridge no recibe esa pulsación, así que se abriría manteniendo pulsado el botón del cajón en el dock.
 - Con el fork y "Acceso de uso", las últimas apps usadas en todo el teléfono (la última vez que se usó cada app, de `getAppUsageURL`); sin él, las abiertas desde el launcher (`useAppLauncherStore`, las mismas que muestra la búsqueda).
+- **Hecho:** `menu/RecentAppsDialog.vue`, al mantener pulsado el botón del cajón; `recentFromUsage()` en `utils/recentApps.ts` (con tests) ordena por último uso y deja fuera a Bridge.
 - **Esfuerzo:** bajo a medio.
 
-### 43. Carpetas de contactos
+### 43. Carpetas de contactos ✅ Hecho
 En 2.3, "Añadir → Carpetas" ofrecía, además de la carpeta nueva, carpetas "vivas": **Todos los contactos**, **Contactos con número de teléfono** y **Contactos destacados**. Se abren como una carpeta, con la lista de contactos (foto con el marco de `gb-contact-photo` y nombre), y tocar uno abre el menú de llamar / mensaje / ver contacto de los favoritos.
 - **API (fork):** `getContactsURL(query, starredOnly, limit)` (solo trae contactos con número, así que "Todos" y "Con número" serían la misma lista), `getContactPhotoURL` y lo demás de `useContactsStore`.
 - Un nuevo tipo de elemento en `useHomeLayoutStore` (o una carpeta con un campo `source`), su icono de carpeta con la silueta de contacto y la lista en `FolderPanel`.
+- **Hecho:** "Añadir → Carpetas" ofrece "Carpeta nueva", "Contactos" y "Contactos destacados" (con el fork). La carpeta lleva `source` en `useHomeLayoutStore`, no acepta apps arrastradas, su icono muestra una silueta, y `FolderPanel` lista los contactos con el menú de llamar / mensaje / ver contacto.
 - **Esfuerzo:** medio.
 
-### 44. Widget de mensajes
+### 44. Widget de mensajes ✅ Hecho
 Las últimas conversaciones de la app de mensajes predeterminada (remitente, texto y hora), con respuesta rápida sin abrir la app.
 - **API (fork):** `getDefaultAppPackageName('sms')` para saber qué notificaciones mirar (y `'email'` para una variante de correo), las notificaciones que ya lee `useNotificationsStore`, y `requestReplyToNotification` para responder (el panel ya lo usa). Solo ve los mensajes que tienen notificación sin leer: el fork no lee los SMS.
 - Tamaño 4×2, con la barra "Mensajes" y la lista hundida del estilo de los widgets.
+- **Hecho:** `widgets/messages/MessagesWidget.vue` (4×2) y `messageNotifications()` en `utils/notifications.ts` (con tests). Tocar un mensaje lo abre, "Responder" abre un diálogo de respuesta y la barra abre la app de mensajes.
 - **Esfuerzo:** medio.
 
 ### 45. Márgenes de pantalla precisos ✅ Hecho
@@ -343,22 +348,25 @@ El fork ya informaba bien los márgenes y el launcher los tomaba bien (usa el ma
 - **Sin hacer:** usar `getTappableElementWindowInsets()` para distinguir la navegación por gestos de la de botones; se verá con la idea 10.
 - **Esfuerzo:** bajo.
 
-### 46. Vista previa de las pantallas
+### 46. Vista previa de las pantallas ✅ Hecho
 En Gingerbread, mantener pulsados los puntos de los lados del dock mostraba las 5 pantallas en miniatura para saltar a una.
 - Solo en el launcher: las miniaturas se dibujan con los mismos `HomeGrid` a escala (como las vistas previas de "Añadir"), sobre un fondo oscuro.
+- **Hecho:** `home/ScreenPreview.vue`, al mantener pulsados los puntos del dock: las 5 pantallas con `HomeGrid` en modo `preview` (no se registra como zona de soltar ni responde a toques), la actual con borde naranja y la principal marcada.
 - **Esfuerzo:** medio.
 
-### 47. Copia de seguridad del escritorio
+### 47. Copia de seguridad del escritorio ✅ Hecho
 Todo el diseño (pantallas, carpetas, widgets y sus datos, ajustes) vive en el `localStorage` del WebView: si se borran los datos de Bridge o se reinstala, se pierde.
 - En "Acerca de y diagnóstico": **Exportar**, que genera un archivo JSON con `home.*`, `widgets.data`, `settings.*`, `launcher.*` y `weather.*`, e **Importar**, que lo lee con `<input type="file">` (el fork ya abre el selector de Android) y recarga el launcher.
 - Las fotos del marco de fotos (IndexedDB) irían aparte o se omitirían.
 - **API:** para exportar, el WebView de Bridge no guarda descargas; habría que copiar el JSON al portapapeles o agregar al fork un método para guardar un archivo (por ejemplo `requestSaveFile(name, text)`, con el selector de Android). Importar funciona ya.
+- **Hecho:** en "Acerca de y diagnóstico", Exportar e Importar (`utils/backup.ts`, con tests: todas las claves `home.`, `launcher.`, `settings.`, `widgets.` y `weather.`; importar pide confirmación y recarga). **Fork (nuevo):** `requestSaveFile(fileName, content, mimeType?)` abre el "Guardar como" de Android (`ACTION_CREATE_DOCUMENT`, sin permisos) y el resultado llega en el evento `fileSaved` (`saved` / `cancelled` / `failed`). Con el Bridge original, Exportar copia el JSON al portapapeles.
 - **Esfuerzo:** medio.
 
-### 48. Widget de marcadores
+### 48. Widget de marcadores ✅ Hecho
 El widget "Marcadores" del navegador de 2.3: una cuadrícula de sitios con su nombre, que abre el navegador en cada uno.
 - Solo en el launcher: los sitios se agregan y editan en un `WidgetDialog` y se guardan con `useWidgetData`. El icono de cada sitio sería su `favicon` (`https://sitio/favicon.ico`), con una letra de respaldo.
 - **API:** `requestOpenUrl` (fork); con el Bridge original no se pueden abrir enlaces.
+- **Hecho:** `widgets/bookmarks/BookmarksWidget.vue` (4×2, hasta 8 sitios) y `utils/bookmarks.ts` (con tests). Tocar la barra edita la lista; el icono es el `favicon.ico` del sitio, o su inicial si no carga.
 - **Esfuerzo:** bajo a medio.
 
 ### 49. Próxima alarma ✅ Hecho
@@ -371,6 +379,14 @@ La barra de estado de 2.3 mostraba un despertador cuando había una alarma puest
 Al elegir la barra Gingerbread, el launcher pone en oscuro las pantallas propias de Bridge (ajustes, consola, su cajón), para que no destaquen al abrirlas, y al quitarla restaura el tema que había (`settings.savedBridgeTheme`, vacío si no lo cambió, para no pisar un tema oscuro que ya estaba), como hace con la barra de estado y el overscroll.
 - **API:** `getBridgeTheme()` / `requestSetBridgeTheme()` (API publicada), a través de `useTogglesStore.bridgeTheme`.
 - **Esfuerzo:** muy bajo.
+
+### 51. Apps del perfil de trabajo ✅ Hecho
+Poder abrir las apps del perfil de trabajo (por ejemplo, el Teams laboral). Hoy Bridge solo lista las apps del perfil personal, y como todo se identifica por `packageName`, Teams personal y de trabajo (el mismo paquete) no se pueden distinguir.
+- **Fork (nuevo):** `getProfileAppsURL()` (todas las apps de todos los perfiles, cada una con `userSerial`, `profile: 'personal' | 'work'` e `isPaused`), `getProfileAppIconURL(packageName, userSerial)` (icono con el maletín), `requestLaunchProfileApp` / `requestOpenProfileAppInfo(packageName, userSerial)` y el evento `profileAppsChanged`. Usa `LauncherApps`, sin permisos nuevos. Los métodos existentes no cambian.
+- **Launcher:** clave de app `packageName` para las apps personales y `packageName@userSerial` para las de trabajo, así el escritorio, las carpetas y las recientes guardados siguen valiendo; `useAppsStore` usa la lista con perfiles si existe (`bridgeHas`), y abrir, información e icono eligen el método según el perfil.
+- **Cajón:** sección "Trabajo" debajo de las apps personales; en gris mientras las apps de trabajo están en pausa (al tocar una, Android pregunta si activarlas). Pausar/reanudar desde el launcher quedó fuera.
+- Si una app de trabajo desaparece, su icono en el escritorio se oculta en vez de borrarse (el perfil puede volver); soltar una app de trabajo del cajón en la papelera abre su información en vez de desinstalarla; el menú de accesos directos solo aparece en las apps personales.
+- **Esfuerzo:** medio en los dos.
 
 ---
 

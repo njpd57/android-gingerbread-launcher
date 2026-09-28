@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useBridgeEventStore } from "./useBridgeEventStore";
 import { bridgeHas } from "@/utils/bridge-utils";
 import type { BridgeCalendarEvent, BridgeGetCalendarEventsResponse } from "@/types/bridge-fork";
+import { bridgeRequest } from "@/utils/toast";
 
 // The device's calendar events, for the month calendar and agenda widgets. Only our Bridge fork can read
 // them, after the user allows it in Android's dialog. Widgets fetch the range they show, and fetch again
@@ -56,8 +57,8 @@ export const useCalendarStore = defineStore('calendar', () =>
         canRead,
         version,
         fetchEvents,
-        requestAccess: () => Bridge.requestCalendarPermission(true),
-        openEvent: (e: BridgeCalendarEvent) => Bridge.requestOpenCalendarEvent(e.eventId, e.begin, e.end, true),
-        openDay: (date: Date) => Bridge.requestOpenCalendarAt(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9).getTime(), true),
+        requestAccess: () => bridgeRequest(t => Bridge.requestCalendarPermission(t)),
+        openEvent: (e: BridgeCalendarEvent) => bridgeRequest(t => Bridge.requestOpenCalendarEvent(e.eventId, e.begin, e.end, t)),
+        openDay: (date: Date) => bridgeRequest(t => Bridge.requestOpenCalendarAt(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9).getTime(), t)),
     };
 });

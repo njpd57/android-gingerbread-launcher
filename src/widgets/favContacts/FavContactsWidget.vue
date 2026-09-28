@@ -4,6 +4,7 @@ import { useContactsStore } from '@/stores/useContactsStore';
 import type { BridgeContact } from '@/types/bridge-fork';
 import ContactGlyph from '@/widgets/search/ContactGlyph.vue';
 import WidgetDialog from '@/components/WidgetDialog.vue';
+import { bridgeRequest } from '@/utils/toast';
 
 // Up to 4 favorite contacts (4x1), starred in the Contacts app, with a Quick Contact style menu on
 // tap: call, message or view the contact. Needs our Bridge fork's contacts API and READ_CONTACTS.
@@ -48,7 +49,7 @@ function callNumber(number: string)
 function messageNumber(number: string)
 {
     menuFor.value = null;
-    Bridge.requestOpenUrl(`smsto:${number}`);
+    bridgeRequest(t => Bridge.requestOpenUrl(`smsto:${number}`, t));
 }
 
 function viewContact(c: BridgeContact)

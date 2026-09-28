@@ -18,6 +18,7 @@ import LockIcon from '@/home/icons/LockIcon.vue';
 import NightModeIcon from '@/home/icons/NightModeIcon.vue';
 import NotificationsIcon from '@/home/icons/NotificationsIcon.vue';
 import SettingsIcon from '@/home/icons/SettingsIcon.vue';
+import { bridgeRequest } from '@/utils/toast';
 
 // Android 2.x's "Power control" widget: a row of buttons, each with an indicator bar underneath.
 // With our Bridge fork it's Wi-Fi, Bluetooth, ringer mode, sync and brightness (swapping the original's
@@ -81,7 +82,7 @@ function openNotifications()
     if (notifications.isSupported)
         menu.showNotificationPanel();
     else
-        Bridge.requestExpandNotificationShade(true);
+        bridgeRequest(t => Bridge.requestExpandNotificationShade(t));
 }
 
 </script>
@@ -160,7 +161,7 @@ function openNotifications()
             <span class="indicator none"></span>
         </button>
 
-        <button class="toggle" aria-label="Ajustes" @click="Bridge.requestOpenAndroidSettings(true)">
+        <button class="toggle" aria-label="Ajustes" @click="bridgeRequest(t => Bridge.requestOpenAndroidSettings(t))">
             <SettingsIcon />
             <span class="indicator none"></span>
         </button>
