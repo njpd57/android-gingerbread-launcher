@@ -279,6 +279,9 @@ declare module '@bridgelauncher/api'
         /** Opens a `http`, `https`, `tel`, `mailto`, `sms`, `smsto` or `geo` URL in the app that handles it. */
         requestOpenUrl(url: string, showToastIfFailed?: boolean): boolean;
 
+        /** A URL that downloads `url` (http or https) through Bridge, for sites that don't allow CORS. Keeps the site's status and content type; 502 if the download fails, 504 on a timeout. */
+        getProxyURL(url: string): string;
+
         /** Package name of the user's default app for the role, or null when there is none. */
         getDefaultAppPackageName(role: BridgeDefaultAppRole): string | null;
 

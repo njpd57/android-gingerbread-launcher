@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { onBeforeUnmount, ref, watch } from 'vue';
 import { useWidgetData } from '@/stores/useWidgetDataStore';
 import { useBridgeEventStore, type AnyBridgeEventListener } from '@/stores/useBridgeEventStore';
-import { normalizeFeedUrl, parseFeed, type FeedItem } from '@/utils/rss';
+import { FEED_PRESETS, normalizeFeedUrl, parseFeed, type FeedItem } from '@/utils/rss';
 import { bridgeHas } from '@/utils/bridge-utils';
 import WidgetDialog from '@/components/WidgetDialog.vue';
 import GbButton from '@/components/GbButton.vue';
+import GbRadioRow from '@/components/GbRadioRow.vue';
 import { bridgeRequest, showToast } from '@/utils/toast';
 
 // The latest headlines of an RSS or Atom feed (4x2). Tapping a headline opens it (our Bridge fork's
-// requestOpenUrl); tapping the title changes the feed. The WebView can only read feeds that allow CORS,
-// which many don't: the error says so.
+// requestOpenUrl); tapping the title changes the feed. With the fork, feeds are downloaded through Bridge
+// (getProxyURL), so any feed works; otherwise the WebView can only read feeds that allow CORS, which many
+// don't: the error says so.
 
 // a Chilean news feed that allows CORS, so the widget works right away (the m. site: see normalizeFeedUrl)
-const DEFAULT_FEED = 'https://m.cooperativa.cl/noticias/site/tax/port/all/rss_3___1.xml';
+const DEFAULT_FEED = FEED_PRESETS[0].url;
 const REFRESH_MS = 30 * 60_000;
 const MAX_ITEMS = 8;
 
@@ -29,13 +31,18 @@ const error = ref('');
 const loading = ref(false);
 let lastFetch = 0;
 
+const canProxy = bridgeHas('getProxyURL');
+// without the proxy, only the feeds that allow CORS can be read
+const presets = FEED_PRESETS.filter(f => canProxy || f.cors);
+
 async function load()
 {
     loading.value = true;
     error.value = '';
     try
     {
-        const resp = await fetch(normalizeFeedUrl(feedUrl.value));
+        const url = normalizeFeedUrl(feedUrl.value);
+        const resp = await fetch(canProxy ? Bridge.getProxyURL(url) : url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const feed = parseFeed(await resp.text());
         if (!feed)
@@ -50,9 +57,11 @@ async function load()
     catch
     {
         // a CORS refusal and no connection look the same from here
-        error.value = navigator.onLine
-            ? 'No se pudo leer este feed. Muchos sitios no permiten leerlos desde otra página (CORS).'
-            : 'Sin conexión.';
+        error.value = !navigator.onLine
+            ? 'Sin conexión.'
+            : canProxy
+                ? 'No se pudo descargar este feed.'
+                : 'No se pudo leer este feed. Muchos sitios no permiten leerlos desde otra página (CORS).';
     }
     finally
     {
@@ -96,15 +105,20 @@ function open(item: FeedItem)
 
 const isEditing = ref(false);
 const draft = ref('');
-const inputEl = ref<HTMLInputElement>();
 
-async function edit()
+// the field isn't focused on open, so the keyboard doesn't cover the list of feeds
+function edit()
 {
     if (!props.widgetId) return;
     draft.value = feedUrl.value;
     isEditing.value = true;
-    await nextTick();
-    inputEl.value?.select();
+}
+
+// picking a listed feed applies it right away, like Gingerbread's list dialogs
+function pick(url: string)
+{
+    feedUrl.value = url;
+    isEditing.value = false;
 }
 
 function save()
@@ -134,12 +148,20 @@ function save()
         <div v-else class="message">{{ error || (loading ? 'Cargando…' : 'El feed no tiene titulares.') }}</div>
 
         <WidgetDialog :open="isEditing" title="Feed de titulares" @close="isEditing = false">
+            <GbRadioRow
+                v-for="preset in presets"
+                :key="preset.url"
+                name="rssFeed"
+                :value="preset.url"
+                :model-value="feedUrl"
+                :label="preset.name"
+                @update:model-value="pick" />
             <form class="form" @submit.prevent="save">
-                <input ref="inputEl" v-model="draft" type="url" placeholder="https://…/feed.xml" enterkeyhint="done" />
-                <p>Dirección de un feed RSS o Atom. Solo funcionan los que permiten CORS, como el de Cooperativa.cl.</p>
+                <input v-model="draft" type="url" placeholder="https://…/feed.xml" enterkeyhint="done" />
+                <p v-if="canProxy">O la dirección de otro feed RSS o Atom.</p>
+                <p v-else>O la dirección de otro feed RSS o Atom. Solo funcionan los que permiten CORS.</p>
             </form>
             <template #buttons>
-                <GbButton @click="draft = DEFAULT_FEED">Por defecto</GbButton>
                 <GbButton @click="save">Aceptar</GbButton>
             </template>
         </WidgetDialog>

@@ -82,6 +82,12 @@ class ForkBridgeMock extends BridgeMock
         return true;
     }
 
+    // no proxy in the browser: the URL is fetched directly, so CORS still applies
+    getProxyURL(url: string)
+    {
+        return url;
+    }
+
     getDefaultAppPackageName(role: BridgeDefaultAppRole)
     {
         const packages: Record<BridgeDefaultAppRole, string> = {

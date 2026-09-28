@@ -10,6 +10,29 @@ export interface Feed
     items: FeedItem[];
 }
 
+export interface FeedPreset
+{
+    name: string;
+    url: string;
+    /** Allows CORS, so it works without our Bridge fork's getProxyURL. */
+    cors?: boolean;
+}
+
+/** Feeds offered when changing the widget's feed. All checked to return RSS or Atom on 28/09/2026. */
+export const FEED_PRESETS: FeedPreset[] = [
+    { name: 'Cooperativa', url: 'https://m.cooperativa.cl/noticias/site/tax/port/all/rss_3___1.xml', cors: true },
+    { name: 'La Tercera', url: 'https://www.latercera.com/arc/outboundfeeds/rss/?outputType=xml' },
+    { name: 'BBC Mundo', url: 'https://feeds.bbci.co.uk/mundo/rss.xml' },
+    { name: 'El País', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada' },
+    { name: 'DW Español', url: 'https://rss.dw.com/xml/rss-sp-all' },
+    { name: 'France 24', url: 'https://www.france24.com/es/rss' },
+    { name: 'Xataka', url: 'https://www.xataka.com/feedburner.xml' },
+    { name: 'Genbeta', url: 'https://www.genbeta.com/feedburner.xml' },
+    { name: 'Hipertextual', url: 'https://hipertextual.com/feed' },
+    { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
+    { name: 'Hacker News', url: 'https://hnrss.org/frontpage', cors: true },
+];
+
 const text = (el: Element | null | undefined) => el?.textContent?.trim() ?? '';
 
 /** Reads an RSS 2.0 or Atom feed; null if the text isn't a feed. */
