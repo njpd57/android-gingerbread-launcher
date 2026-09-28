@@ -5,6 +5,7 @@ import GbDialog from '@/components/GbDialog.vue';
 import GbButton from '@/components/GbButton.vue';
 import GbRadioRow from '@/components/GbRadioRow.vue';
 import { bridgeRequest } from '@/utils/toast';
+import { GINGERBREAD_WALLPAPERS, wallpaperThumbURL } from '@/utils/gingerbreadWallpapers';
 
 const menu = useMenuStore();
 const settings = useSettingsStore();
@@ -15,6 +16,7 @@ const wallpaperOptions: { value: WallpaperKind; label: string; hint: string }[] 
     { value: 'galaxy', label: 'Galaxia', hint: 'Una galaxia espiral que gira despacio' },
     { value: 'magicSmoke', label: 'Humo mágico', hint: 'Humo de colores; tócalo para removerlo' },
     { value: 'polarClock', label: 'Reloj polar', hint: 'La hora, el día y el mes en anillos de colores' },
+    { value: 'image', label: 'Imagen de Gingerbread', hint: 'Uno de los fondos de Android 2.3' },
     { value: 'system', label: 'Fondo del sistema', hint: 'La imagen elegida en Android' },
 ];
 
@@ -50,7 +52,20 @@ const fpsOptions: NexusFps[] = [30, 60, 120];
             :hint="opt.hint"
             @update:model-value="settings.wallpaper = opt.value" />
 
-        <section v-if="settings.wallpaper !== 'system'" class="options">
+        <section v-if="settings.wallpaper === 'image'" class="options">
+            <div class="thumbs">
+                <button
+                    v-for="id in GINGERBREAD_WALLPAPERS"
+                    :key="id"
+                    :class="{ selected: settings.imageWallpaper === id }"
+                    :aria-pressed="settings.imageWallpaper === id"
+                    @click="settings.imageWallpaper = id">
+                    <img :src="wallpaperThumbURL(id)" alt="" loading="lazy" draggable="false" />
+                </button>
+            </div>
+        </section>
+
+        <section v-else-if="settings.wallpaper !== 'system'" class="options">
             <template v-if="settings.wallpaper === 'nexus'">
                 <div class="field-label">Cantidad de pulsos</div>
                 <div class="segmented">
@@ -156,6 +171,38 @@ const fpsOptions: NexusFps[] = [30, 60, 120];
 
     > .wide {
         width: 100%;
+    }
+
+    // Gingerbread's wallpaper picker: a grid of previews, the chosen one framed in orange
+    > .thumbs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+
+        > button {
+            appearance: none;
+            padding: 2px;
+            border: 1px solid #5a5a5a;
+            border-radius: 2px;
+            background: #222;
+            cursor: pointer;
+
+            > img {
+                display: block;
+                width: 100%;
+                aspect-ratio: 170 / 142;
+                object-fit: cover;
+            }
+
+            &.selected {
+                border-color: #ffa800;
+                box-shadow: 0 0 0 2px #ffa800;
+            }
+
+            &:active {
+                background: linear-gradient(to bottom, #ffc64d, #ff8a00);
+            }
+        }
     }
 }
 </style>

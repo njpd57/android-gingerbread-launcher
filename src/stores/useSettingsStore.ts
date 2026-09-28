@@ -10,7 +10,8 @@ import { showToast } from "@/utils/toast";
 
 /** A live wallpaper drawn by the launcher (src/wallpaper/), or Android's own wallpaper. */
 export type LiveWallpaperKind = 'nexus' | 'grass' | 'galaxy' | 'magicSmoke' | 'polarClock';
-export type WallpaperKind = LiveWallpaperKind | 'system';
+/** A live wallpaper, one of 2.3's still images (`imageWallpaper`), or Android's own wallpaper. */
+export type WallpaperKind = LiveWallpaperKind | 'image' | 'system';
 export type Level = 'low' | 'normal' | 'high';
 export type NexusFps = 30 | 60 | 120;
 export type StatusBarBackground = 'none' | 'gray' | 'blackGradient' | 'white' | 'black';
@@ -33,6 +34,8 @@ export const useSettingsStore = defineStore('settings', () =>
     const layout = useHomeLayoutStore();
 
     const wallpaper = useLocalStorage<WallpaperKind>('settings.wallpaper', 'nexus');
+    // which of 2.3's still wallpapers (utils/gingerbreadWallpapers.ts) when `wallpaper` is 'image'
+    const imageWallpaper = useLocalStorage<string>('settings.imageWallpaper', 'electric');
     const nexusDensity = useLocalStorage<Level>('settings.nexusDensity', 'normal');
     const nexusSpeed = useLocalStorage<Level>('settings.nexusSpeed', 'normal');
     const nexusFps = useLocalStorage<NexusFps>('settings.nexusFps', 30);
@@ -140,6 +143,7 @@ export const useSettingsStore = defineStore('settings', () =>
 
     return {
         wallpaper,
+        imageWallpaper,
         nexusDensity,
         nexusSpeed,
         nexusFps,

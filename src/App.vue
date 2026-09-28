@@ -17,6 +17,7 @@ import DragLayer from './home/DragLayer.vue';
 import AppShortcutsMenu from './shortcuts/AppShortcutsMenu.vue';
 import AppDrawer from './drawer/AppDrawer.vue';
 import { LIVE_WALLPAPERS, type LiveWallpaperInstance } from './wallpaper/liveWallpapers';
+import ImageWallpaper from './wallpaper/ImageWallpaper.vue';
 import OptionsMenu from './menu/OptionsMenu.vue';
 import WallpaperDialog from './menu/WallpaperDialog.vue';
 import AddDialog from './menu/AddDialog.vue';
@@ -67,7 +68,12 @@ function isTyping()
 }
 
 const wallpaper = ref<LiveWallpaperInstance>();
-const liveWallpaper = computed(() => settings.wallpaper === 'system' ? null : LIVE_WALLPAPERS[settings.wallpaper]);
+const liveWallpaper = computed(() =>
+{
+    const kind = settings.wallpaper;
+    if (kind === 'system') return null;
+    return kind === 'image' ? ImageWallpaper : LIVE_WALLPAPERS[kind];
+});
 
 // empty space = anywhere on the workspace that isn't an icon or widget
 function isEmptySpace(target: EventTarget | null)
