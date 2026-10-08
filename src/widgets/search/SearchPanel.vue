@@ -15,7 +15,8 @@ import OverscrollGlow from '@/components/OverscrollGlow.vue';
 import GbDialog from '@/components/GbDialog.vue';
 import SearchGlyph from './SearchGlyph.vue';
 import ContactGlyph from './ContactGlyph.vue';
-import { bridgeRequest } from '@/utils/toast';
+import { bridgeRequest, showToast } from '@/utils/toast';
+import { quickAnswer } from '@/utils/quickAnswer';
 
 // Full-screen app search, styled after Gingerbread's Quick Search Box: the search bar at the top
 // with the keyboard up, and a white list of results that filters as you type. Below the apps, a
@@ -44,6 +45,18 @@ const recentApps = computed(() => launcher.recent
     .filter((a): a is InstalledAppInfo => !!a));
 
 const isQueryEmpty = computed(() => query.value.trim() === '');
+
+// a calculation or unit conversion ("15% de 48.000", "3 km en millas"), shown above the apps
+const answer = computed(() => looksLikePhoneNumber(query.value) ? null : quickAnswer(query.value));
+
+function copyAnswer()
+{
+    const a = answer.value;
+    if (!a) return;
+    navigator.clipboard.writeText(a.text).then(
+        () => showToast(`${a.text} copiado`),
+        () => showToast('No se pudo copiar el resultado.', true));
+}
 
 // all of the user's contacts, loaded once when the panel is first used and filtered locally
 // (like apps: same accent/case-insensitive ranking), so typing doesn't refetch on every letter
@@ -141,7 +154,10 @@ function searchWeb()
 // "Enter" on the keyboard opens the app when there's exactly one match, and searches the web otherwise
 function onSubmit()
 {
-    if (results.value.length === 1)
+    // with a calculation there's nothing to launch or search: Enter copies the result
+    if (answer.value)
+        copyAnswer();
+    else if (results.value.length === 1)
         launch(results.value[0]);
     else if (canSearchWeb && !isQueryEmpty.value)
         searchWeb();
@@ -183,6 +199,14 @@ function clear()
                 <div class="results" ref="listEl">
                     <div v-if="isQueryEmpty" class="section">Aplicaciones recientes</div>
 
+                    <button v-if="answer" class="row answer" @click="copyAnswer">
+                        <span class="texts">
+                            <span class="number">{{ answer.question }} =</span>
+                            <span class="label">{{ answer.text }}</span>
+                        </span>
+                        <span class="copy">Copiar</span>
+                    </button>
+
                     <button
                         v-for="app in shownApps"
                         :key="app.key"
@@ -192,7 +216,7 @@ function clear()
                         <span class="label">{{ app.label }}</span>
                     </button>
 
-                    <div v-if="!isQueryEmpty && results.length === 0" class="empty">
+                    <div v-if="!isQueryEmpty && results.length === 0 && !answer" class="empty">
                         No se encontraron aplicaciones
                     </div>
 
@@ -423,6 +447,22 @@ $gingerbread-orange: #ffa800;
 
                 &:active {
                     background: linear-gradient(to bottom, #ffc64d, #ff8a00);
+                }
+
+                // the calculator's answer: big result, with what was understood above it
+                &.answer {
+                    justify-content: space-between;
+
+                    > .texts > .label {
+                        font-size: 24px;
+                        font-weight: bold;
+                    }
+
+                    > .copy {
+                        flex-shrink: 0;
+                        color: #777;
+                        font-size: 13px;
+                    }
                 }
             }
 
