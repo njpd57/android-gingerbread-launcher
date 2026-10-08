@@ -427,6 +427,42 @@ Los 25 fondos del selector de 2.3 (Launcher2 de AOSP android-2.3.7_r1, Apache 2.
 - La lógica está en `utils/drawerApps.ts`, con tests.
 - **API:** ninguna.
 
+### 57. Tarot: carta del día ✅ Hecho
+Un arcano mayor del tarot Rider-Waite-Smith cada día, al derecho o invertido. La carta aparece boca abajo hasta que se toca (se da vuelta y queda así hasta la medianoche); tocarla otra vez abre la lectura completa, con el significado del otro sentido.
+- Las 22 cartas son las de 1909, de dominio público (Wikimedia Commons, `src/widgets/tarot/cards/NOTICE`). Textos en `widgets/tarot/tarotCards.ts`.
+- La elección del día está en `utils/daily.ts` (con tests): la misma todo el día, distinta al día siguiente y sin seguir el orden de la lista. La usan también los tres widgets siguientes.
+- La carta boca abajo, el giro y el diálogo de lectura son `widgets/tarot/DailyCardWidget.vue`, que comparte el tarot egipcio.
+- **Tamaño:** 4×2. **API:** ninguna.
+
+### 58. Tarot egipcio: arcano del día ✅ Hecho
+Uno de los 22 arcanos mayores del tarot egipcio (El Mago, La Indecisión, La Retribución… hasta XXII, El Regreso), con su otro nombre tradicional y un mensaje. No hay imágenes libres de ese mazo, así que la carta se dibuja: papiro con marco de oro y lapislázuli, el número y un jeroglífico que representa al arcano.
+- Los jeroglíficos usan Noto Sans Egyptian Hieroglyphs (SIL OFL), reducida a los que se usan (15 KB): `scripts/subset-hieroglyphs.sh` la regenera tras agregar uno en `widgets/egyptian/*.ts`.
+- **Tamaño:** 4×2. **API:** ninguna.
+
+### 59. Mensaje de los dioses egipcios ✅ Hecho
+Cada día un dios o diosa de Egipto (Ra, Isis, Thot, Anubis, Maat, Bastet… 26 en total) con su jeroglífico en un cartucho y un mensaje. Tocarlo muestra el mensaje completo.
+- **Tamaño:** 4×1. **API:** ninguna.
+
+### 60. Consejo de pareja ✅ Hecho
+Un consejo práctico para la relación cada día (58 en `widgets/couple/coupleTips.ts`), junto a un corazón.
+- **Tamaño:** 4×1. **API:** ninguna.
+
+### 61. Llamadas perdidas ✅ Hecho
+Como el widget de Mensajes, pero con las llamadas perdidas: las notificaciones que Android marca como llamada perdida (de cualquier app de teléfono) y las de la app de teléfono predeterminada que no son una llamada en curso (`missedCallNotifications()`, con tests). Cada una muestra los botones de su notificación ("Devolver llamada", "Mensaje"); tocarla abre el registro, y la barra abre la app de teléfono.
+- **Tamaño:** 4×2. **API (fork):** las notificaciones y `getDefaultAppPackageName('dialer')`, ya existentes.
+
+### 62. Calculadora y conversiones en la búsqueda ✅ Hecho
+Al escribir una cuenta o una conversión en la búsqueda, el resultado aparece arriba de las apps; tocarlo (o Intro) lo copia.
+- Cuentas con `+ - * x / ^`, paréntesis y porcentajes como en una calculadora de bolsillo: "15% de 48.000" = 7.200, "48000 + 19%" = 57.120.
+- Números a la chilena: coma decimal ("2,5") y punto de miles ("48.000").
+- Conversiones: largo, peso, volumen, superficie, temperatura, velocidad, datos y tiempo ("3 km en millas", "100 f en c", "2 GB a MB").
+- `utils/quickAnswer.ts`, con tests. No convierte monedas (necesitaría internet).
+- **API:** ninguna.
+
+### 63. Deslizar hacia arriba para abrir el cajón ✅ Hecho
+En el escritorio, deslizar hacia arriba abre el cajón de aplicaciones (desde 80 px, o con un movimiento rápido). Es el mismo detector que baja el panel de notificaciones (`useShadePull`, `swipeOpensDrawer()` en `utils/shadeGesture.ts`).
+- **API:** ninguna.
+
 ---
 
 ## Fallos de Bridge
