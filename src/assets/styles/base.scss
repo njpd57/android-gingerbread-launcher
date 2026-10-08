@@ -17,6 +17,12 @@
     src: url("@/assets/fonts/Clockopia.ttf") format("truetype");
 }
 
+// only the hieroglyphs the Egyptian widgets use (scripts/subset-hieroglyphs.sh; SIL OFL 1.1)
+@font-face {
+    font-family: "Noto Sans Egyptian Hieroglyphs";
+    src: url("@/assets/fonts/NotoSansEgyptianHieroglyphs-subset.woff2") format("woff2");
+}
+
 .launcher-root {
     color-scheme: dark;
     color: #fff;

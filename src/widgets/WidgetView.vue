@@ -26,6 +26,10 @@ import FavContactsWidget from './favContacts/FavContactsWidget.vue';
 import DirectContactWidget from './directContact/DirectContactWidget.vue';
 import BookmarksWidget from './bookmarks/BookmarksWidget.vue';
 import MessagesWidget from './messages/MessagesWidget.vue';
+import TarotWidget from './tarot/TarotWidget.vue';
+import EgyptianTarotWidget from './egyptian/EgyptianTarotWidget.vue';
+import EgyptianGodWidget from './egyptian/EgyptianGodWidget.vue';
+import CoupleTipWidget from './couple/CoupleTipWidget.vue';
 
 // Renders any widget by kind, filling the grid area it's placed in.
 // Used both on the home screen (HomeGrid) and for the item being dragged (DragLayer).
@@ -69,6 +73,10 @@ defineProps<{
         <DirectContactWidget v-else-if="kind === 'directMessage'" :widget-id="widgetId" mode="message" />
         <BookmarksWidget v-else-if="kind === 'bookmarks'" :widget-id="widgetId" />
         <MessagesWidget v-else-if="kind === 'messages'" :preview="!widgetId" />
+        <TarotWidget v-else-if="kind === 'tarot'" :widget-id="widgetId" />
+        <EgyptianTarotWidget v-else-if="kind === 'egyptianTarot'" :widget-id="widgetId" />
+        <EgyptianGodWidget v-else-if="kind === 'egyptianGod'" :widget-id="widgetId" />
+        <CoupleTipWidget v-else-if="kind === 'coupleTip'" />
     </div>
 </template>
 
