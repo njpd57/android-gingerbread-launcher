@@ -29,3 +29,5 @@ coverage
 
 publish-emulator.bat
 publish-doogee.bat
+# Other agents' worktrees
+.claude/worktrees/

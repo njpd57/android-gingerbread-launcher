@@ -26,9 +26,9 @@ npm run grant-permissions     # adb: grant Bridge WRITE_SECURE_SETTINGS (needed 
 
 To run the launcher on a device, point Bridge's "project dir" setting at a folder containing the contents of `dist/`. The Vite build uses stable, unhashed asset names (`assets/index.js`), so copying a new `dist/` over the old one is enough.
 
-Development happens on the **`dev`** branch (`main` gets PRs from `dev`). Keep `.claude/` (other agents' worktrees) out of commits.
+Development happens on the **`dev`** branch (`main` gets PRs from `dev`). Keep `.claude/worktrees/` (other agents' worktrees) out of commits; `.claude/skills/` (project skills) is tracked.
 
-**Commits:** only when the user asks, after they confirm the change on the phone. Delegate them to the `launcher-committer` subagent (Sonnet, `~/.claude/agents/launcher-committer.md`), telling it which repo and what changed: it commits on `dev`, leaves `.claude/` out, runs the type check and tests first, and stops if another session already staged files. Two Claude sessions (this one and the Bridge fork's) can share this repo's git index; they once swept each other's staged files into the wrong commit.
+**Commits:** only when the user asks, after they confirm the change on the phone. Delegate them to the `launcher-committer` subagent (Sonnet, `~/.claude/agents/launcher-committer.md`), telling it which repo and what changed: it commits on `dev`, leaves `.claude/worktrees/` out, runs the type check and tests first, and stops if another session already staged files. Two Claude sessions (this one and the Bridge fork's) can share this repo's git index; they once swept each other's staged files into the wrong commit.
 
 ## Bridge runtime
 
