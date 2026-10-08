@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SHADE_SLOP_PX, shadeGestureDirection, shadeSettlesOpen } from '../shadeGesture';
+import { SHADE_SLOP_PX, shadeGestureDirection, shadeSettlesOpen, swipeOpensDrawer } from '../shadeGesture';
 
 describe('shadeGestureDirection', () =>
 {
@@ -16,11 +16,17 @@ describe('shadeGestureDirection', () =>
         expect(shadeGestureDirection(-10, 20)).toBe('down');
     });
 
-    it('is something else when it goes sideways or up', () =>
+    it('is a swipe up when the finger goes mostly up', () =>
+    {
+        expect(shadeGestureDirection(0, -20)).toBe('up');
+        expect(shadeGestureDirection(5, -30)).toBe('up');
+    });
+
+    it('is something else when it goes sideways', () =>
     {
         expect(shadeGestureDirection(20, 20)).toBe('other');
         expect(shadeGestureDirection(-30, 5)).toBe('other');
-        expect(shadeGestureDirection(0, -20)).toBe('other');
+        expect(shadeGestureDirection(20, -20)).toBe('other');
     });
 });
 
@@ -36,5 +42,15 @@ describe('shadeSettlesOpen', () =>
     {
         expect(shadeSettlesOpen(60, 800, 1)).toBe(true);
         expect(shadeSettlesOpen(700, 800, -1)).toBe(false);
+    });
+});
+
+describe('swipeOpensDrawer', () =>
+{
+    it('opens after a long enough swipe or a quick flick', () =>
+    {
+        expect(swipeOpensDrawer(-120, 0)).toBe(true);
+        expect(swipeOpensDrawer(-30, -1)).toBe(true);
+        expect(swipeOpensDrawer(-30, -0.1)).toBe(false);
     });
 });

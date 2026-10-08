@@ -1,4 +1,5 @@
-// Pulling the notification panel down with a finger, like Gingerbread's shade (useShadePull).
+// Pulling the notification panel down with a finger, like Gingerbread's shade, and swiping up to open
+// the drawer (useShadePull).
 
 /** How far the finger moves before the gesture counts as a pull (or as something else). */
 export const SHADE_SLOP_PX = 12;
@@ -10,13 +11,23 @@ const FLICK_SPEED = 0.5;
 const OPEN_FRACTION = 0.35;
 
 /**
- * What a finger that moved (dx, dy) from where it went down is doing: pulling the panel down,
- * something else (swiping pages, scrolling up), or null while it hasn't moved enough to tell.
+ * What a finger that moved (dx, dy) from where it went down is doing: pulling the panel down, swiping
+ * up (to open the drawer), something else (swiping pages), or null while it hasn't moved enough to tell.
  */
-export function shadeGestureDirection(dx: number, dy: number): 'down' | 'other' | null
+export function shadeGestureDirection(dx: number, dy: number): 'down' | 'up' | 'other' | null
 {
     if (Math.hypot(dx, dy) < SHADE_SLOP_PX) return null;
-    return dy > 0 && dy > 1.5 * Math.abs(dx) ? 'down' : 'other';
+    if (Math.abs(dy) <= 1.5 * Math.abs(dx)) return 'other';
+    return dy > 0 ? 'down' : 'up';
+}
+
+// a swipe up opens the drawer once the finger has gone this far, or flicks up this fast (px/ms)
+const DRAWER_SWIPE_PX = 80;
+
+/** Whether a swipe up that moved `dy` px (negative = up) and ended at `velocity` px/ms opens the drawer. */
+export function swipeOpensDrawer(dy: number, velocity: number): boolean
+{
+    return dy <= -DRAWER_SWIPE_PX || velocity <= -FLICK_SPEED;
 }
 
 /**

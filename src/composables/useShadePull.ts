@@ -1,7 +1,8 @@
 import { useMenuStore } from '@/stores/useMenuStore';
 import { useNotificationsStore } from '@/stores/useNotificationsStore';
 import { useDragStore } from '@/stores/useDragStore';
-import { SHADE_SETTLE_MS, SHADE_SLOP_PX, shadeGestureDirection, shadeSettlesOpen } from '@/utils/shadeGesture';
+import { SHADE_SETTLE_MS, SHADE_SLOP_PX, shadeGestureDirection, shadeSettlesOpen, swipeOpensDrawer } from '@/utils/shadeGesture';
+import { useDrawerStore } from '@/stores/useDrawerStore';
 import { bridgeRequest } from '@/utils/toast';
 
 // a finger that stopped this long before lifting isn't flicking
@@ -12,7 +13,7 @@ let settleTimer = 0;
 /**
  * Gingerbread's shade: swiping down on the home screen (or on our status bar) pulls the notification
  * panel down with the finger, and dragging its handle up pushes it back. Android's own top-edge
- * swipe can't be taken over, so the pull starts below it.
+ * swipe can't be taken over, so the pull starts below it. A swipe up on the home screen opens the drawer.
  * Without our Bridge fork there's no panel of ours: a pull opens Android's shade instead.
  */
 export function useShadePull()
@@ -20,8 +21,10 @@ export function useShadePull()
     const menu = useMenuStore();
     const notifications = useNotificationsStore();
     const drag = useDragStore();
+    const drawer = useDrawerStore();
 
-    let state: 'idle' | 'pending' | 'pulling' = 'idle';
+    // 'swipingUp': a swipe up on the home screen, which opens the drawer when the finger lifts
+    let state: 'idle' | 'pending' | 'pulling' | 'swipingUp' = 'idle';
     let startX = 0;
     let startY = 0;
     let lastY = 0;
@@ -109,6 +112,19 @@ export function useShadePull()
                 state = 'idle';
                 return;
             }
+            if (direction === 'up')
+                state = 'swipingUp';
+        }
+
+        if (state === 'swipingUp')
+        {
+            if (e.cancelable) e.preventDefault();
+            track(t.clientY);
+            return;
+        }
+
+        if (state === 'pending')
+        {
             if (notifications.isSupported)
                 startPull(0);
             else
@@ -124,6 +140,13 @@ export function useShadePull()
 
     function onTouchEnd()
     {
+        if (state === 'swipingUp')
+        {
+            state = 'idle';
+            if (!drag.active && swipeOpensDrawer(lastY - startY, releaseVelocity()))
+                drawer.open();
+            return;
+        }
         if (state !== 'pulling')
         {
             state = 'idle';
