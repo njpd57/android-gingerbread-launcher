@@ -23,7 +23,7 @@ export function autoGridRows(gridWidth: number, gridHeight: number)
 
 export type WidgetKind = 'clock' | 'clockLarge' | 'digitalClock' | 'weather' | 'power' | 'search' | 'battery' | 'calendar' | 'quote' | 'photo' | 'music' | 'musicSongbird' | 'agenda' | 'screenTime' | 'mostUsed'
     | 'countdown' | 'forecast' | 'sunMoon' | 'note' | 'timer' | 'calculator' | 'tasks' | 'rss' | 'favContacts' | 'directCall' | 'directMessage'
-    | 'bookmarks' | 'messages' | 'tarot' | 'egyptianTarot' | 'egyptianGod' | 'coupleTip';
+    | 'bookmarks' | 'messages' | 'tarot' | 'egyptianTarot' | 'egyptianGod' | 'coupleTip' | 'missedCalls';
 
 export const WIDGET_SIZES: Record<WidgetKind, { w: number; h: number }> = {
     clock: { w: 2, h: 2 },
@@ -58,6 +58,7 @@ export const WIDGET_SIZES: Record<WidgetKind, { w: number; h: number }> = {
     egyptianTarot: { w: 4, h: 2 },
     egyptianGod: { w: 4, h: 1 },
     coupleTip: { w: 4, h: 1 },
+    missedCalls: { w: 4, h: 2 },
 };
 
 export interface GridArea

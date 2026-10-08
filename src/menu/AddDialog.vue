@@ -67,6 +67,7 @@ const widgets: { kind: WidgetKind; label: string }[] = [
     { kind: 'rss', label: 'Titulares' },
     { kind: 'bookmarks', label: 'Marcadores' },
     { kind: 'messages', label: 'Mensajes' },
+    { kind: 'missedCalls', label: 'Llamadas perdidas' },
     { kind: 'power', label: 'Control de energía' },
     { kind: 'search', label: 'Búsqueda de aplicaciones' },
     { kind: 'mostUsed', label: 'Apps más usadas' },

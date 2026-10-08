@@ -54,6 +54,18 @@ export function messageNotifications(notifications: Iterable<BridgeNotification>
         .sort((a, b) => b.postTime - a.postTime);
 }
 
+/**
+ * The missed calls widget's calls: notifications Android marks as missed calls (from any phone app), plus
+ * the default phone app's unmarked ones that aren't a call in progress; newest first.
+ */
+export function missedCallNotifications(notifications: Iterable<BridgeNotification>, dialerPackage: string | null): BridgeNotification[]
+{
+    return [...notifications]
+        .filter(n => !n.isGroupSummary && !n.isOngoing
+            && (n.category === 'missed_call' || (n.category === null && n.packageName === dialerPackage)))
+        .sort((a, b) => b.postTime - a.postTime);
+}
+
 /** "11:02 AM" for today (like the status bar clock), a short date otherwise. */
 export function formatNotificationTime(postTime: number, now: Date): string
 {

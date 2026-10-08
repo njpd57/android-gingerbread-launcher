@@ -26,6 +26,7 @@ import FavContactsWidget from './favContacts/FavContactsWidget.vue';
 import DirectContactWidget from './directContact/DirectContactWidget.vue';
 import BookmarksWidget from './bookmarks/BookmarksWidget.vue';
 import MessagesWidget from './messages/MessagesWidget.vue';
+import MissedCallsWidget from './missedCalls/MissedCallsWidget.vue';
 import TarotWidget from './tarot/TarotWidget.vue';
 import EgyptianTarotWidget from './egyptian/EgyptianTarotWidget.vue';
 import EgyptianGodWidget from './egyptian/EgyptianGodWidget.vue';
@@ -73,6 +74,7 @@ defineProps<{
         <DirectContactWidget v-else-if="kind === 'directMessage'" :widget-id="widgetId" mode="message" />
         <BookmarksWidget v-else-if="kind === 'bookmarks'" :widget-id="widgetId" />
         <MessagesWidget v-else-if="kind === 'messages'" :preview="!widgetId" />
+        <MissedCallsWidget v-else-if="kind === 'missedCalls'" :preview="!widgetId" />
         <TarotWidget v-else-if="kind === 'tarot'" :widget-id="widgetId" />
         <EgyptianTarotWidget v-else-if="kind === 'egyptianTarot'" :widget-id="widgetId" />
         <EgyptianGodWidget v-else-if="kind === 'egyptianGod'" :widget-id="widgetId" />

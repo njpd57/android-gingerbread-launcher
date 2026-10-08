@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatNotificationTime, messageNotifications, notificationPanelSections, statusBarNotifications } from '../notifications';
+import { formatNotificationTime, messageNotifications, missedCallNotifications, notificationPanelSections, statusBarNotifications } from '../notifications';
 import type { BridgeNotification } from '@/types/bridge-fork';
 
 function notification(key: string, packageName: string, postTime: number, extra: Partial<BridgeNotification> = {}): BridgeNotification
@@ -29,6 +29,28 @@ describe('messageNotifications', () =>
     it('is empty without a messaging app', () =>
     {
         expect(messageNotifications([notification('m1', 'com.sms', 100)], null)).toEqual([]);
+    });
+});
+
+describe('missedCallNotifications', () =>
+{
+    it('keeps missed calls from any phone app and the phone app’s unmarked ones, newest first', () =>
+    {
+        const result = missedCallNotifications([
+            notification('marked', 'com.other.dialer', 100, { category: 'missed_call' }),
+            notification('unmarked', 'com.samsung.android.dialer', 300),
+            notification('voicemail', 'com.samsung.android.dialer', 350, { category: 'voicemail' }),
+            notification('in-call', 'com.samsung.android.dialer', 400, { isOngoing: true, category: 'call' }),
+            notification('summary', 'com.samsung.android.dialer', 500, { isGroupSummary: true, category: 'missed_call' }),
+            notification('chat', 'com.whatsapp', 600, { category: 'msg' }),
+        ], 'com.samsung.android.dialer');
+        expect(result.map(n => n.key)).toEqual(['unmarked', 'marked']);
+    });
+
+    it('still finds marked missed calls without a default phone app', () =>
+    {
+        const result = missedCallNotifications([notification('marked', 'com.dialer', 100, { category: 'missed_call' })], null);
+        expect(result.map(n => n.key)).toEqual(['marked']);
     });
 });
 
